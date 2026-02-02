@@ -1,5 +1,10 @@
 <?php
+header('X-Robots-Tag: noindex, nofollow, noarchive');
 require __DIR__ . '/inc/prepend.php';
+if(empty($_SERVER['HTTP_USER_AGENT'])) {
+    http_response_code(403);
+    exit;
+}
 
 function tableHead(string $vTittle = ''): string
 {
