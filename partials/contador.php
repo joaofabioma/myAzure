@@ -6,11 +6,11 @@ $ultimaAtualizacao = date('d/m/Y H:i:s');
 
 <div id="contador-relogio" style="
     position: fixed;
-    top: 10px;
-    right: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    top: 3px;
+    right: 40px;
+    background: linear-gradient(135deg, #667eead1 0%, #7395a5c2 100%);
     color: white;
-    padding: 15px 20px;
+    padding: 3px 30px;
     border-radius: 10px;
     font-family: 'Arial', sans-serif;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
