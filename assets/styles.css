@@ -1,0 +1,320 @@
+    /* Reset e configurações base */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        color: #2c3e50;
+        padding: 20px;
+        min-height: 100vh;
+        line-height: 1.6;
+    }
+
+    .container {
+        /* max-width: 1200px; */
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Header/Título */
+    h2 {
+        color: #2c3e50;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3498db;
+        position: relative;
+        background: linear-gradient(to right, #3498db, #2c3e50);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    h2:after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(to right, #3498db, #2980b9);
+        border-radius: 3px;
+    }
+
+    /* Tabela moderna */
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 30px 0;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 25px rgba(52, 152, 219, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    table:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(52, 152, 219, 0.15);
+    }
+
+    th {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 18px 15px;
+        font-size: 0.9rem;
+        border: none;
+        position: relative;
+    }
+
+    th:after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 20%;
+        height: 60%;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    th:last-child:after {
+        display: none;
+    }
+
+    td {
+        padding: 16px 15px;
+        border: none;
+        border-bottom: 1px solid #e8f4fc;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover td {
+        background: #f0f8ff;
+        transform: scale(1.01);
+    }
+
+    /* Cores alternadas para as linhas */
+    tr:nth-child(even) {
+        background: #f8fbfe;
+    }
+
+    /* Canvas do gráfico */
+    #grafico {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-top: 40px;
+        box-shadow: 0 6px 25px rgba(52, 152, 219, 0.1);
+        border: 1px solid #e1f0fa;
+    }
+
+    /* Contador/Relógio - Versão Azul Moderna */
+    #contador-relogio {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        padding: 20px 25px;
+        border-radius: 15px;
+        font-family: 'Segoe UI', sans-serif;
+        box-shadow: 0 8px 32px rgba(52, 152, 219, 0.25);
+        z-index: 1000;
+        min-width: 280px;
+        text-align: center;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    #contador-relogio:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(52, 152, 219, 0.35);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        body {
+            padding: 15px;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+        }
+
+        table {
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+        }
+
+        #contador-relogio {
+            position: relative;
+            top: auto;
+            right: auto;
+            margin: 20px auto;
+            width: 90%;
+            min-width: auto;
+        }
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulseBlue {
+        0% {
+            box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+        }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    .pulse {
+        animation: pulseBlue 2s infinite;
+    }
+
+    /* Botões e interações */
+    .btn {
+        background: linear-gradient(to right, #3498db, #2980b9);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.9rem;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+    }
+
+    /* Status indicators */
+    .status-update {
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 12px;
+        border-radius: 20px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #2980b9;
+        font-size: 0.85rem;
+        margin: 5px 0;
+    }
+
+    .status-update:before {
+        content: '●';
+        margin-right: 6px;
+        color: #2ecc71;
+        animation: pulseBlue 1.5s infinite;
+    }
+
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, #3498db, #2980b9);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(to bottom, #2980b9, #21618c);
+    }
+
+    /* Cards de informação */
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 20px 0;
+        box-shadow: 0 4px 20px rgba(52, 152, 219, 0.08);
+        border-left: 5px solid #3498db;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        border-left-color: #2980b9;
+        box-shadow: 0 6px 30px rgba(52, 152, 219, 0.12);
+    }
+
+    /* Tooltips */
+    [data-tooltip] {
+        position: relative;
+    }
+
+    [data-tooltip]:before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2c3e50;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1001;
+    }
+
+    [data-tooltip]:hover:before {
+        opacity: 1;
+        visibility: visible;
+        bottom: calc(100% + 10px);
+    }
+    

@@ -1,0 +1,5 @@
+.env
+*.bkp.php
+/vendor
+/.history
+/data/*.json
