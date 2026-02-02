@@ -53,7 +53,6 @@ $arquivosMesAno = obterArquivosMesAno();
     <title>Horas por Dia - Azure DevOps</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <!-- <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> -->
     <link rel="icon" href="assets/Microsoft_Azure.svg" type="image/svg+xml">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
