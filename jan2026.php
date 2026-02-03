@@ -32,6 +32,7 @@ require __DIR__ . '/functions.php';
                     <th>📅 Data</th>
                     <th>⏱️ Horas</th>
                     <th>📊 Qtd</th>
+                    <th>📊 Correções</th>
                     <th>📝 Tarefas</th>
                 </tr>
 
@@ -42,6 +43,7 @@ require __DIR__ . '/functions.php';
                         <td><?= !empty($row['date']) ? date('d/m/Y', strtotime($row['date'])) : '-' ?></td>
                         <td><?= number_format(floatval($row['hours'] ?? 0), 2, ',', '.') ?></td>
                         <td><?= intval($row['total'] ?? 0) ?></td>
+                        <td><?= intval($row['correcoes'] ?? 0) ?></td>
                         <td><?= htmlspecialchars(implode(' | ', array_map('strval', $row['tarefas'] ?? [])), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach ?>
