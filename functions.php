@@ -1,5 +1,11 @@
 <?php
 header('X-Robots-Tag: noindex, nofollow, noarchive');
+date_default_timezone_set('America/Cuiaba');
+setlocale(LC_TIME, 'pt_BR', 'pt_BR.utf-8', 'pt_BR.utf-8', 'portuguese');
+if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
+    header('Location: /', true, 301);
+    exit();
+}
 require __DIR__ . '/inc/prepend.php';
 if (empty($_SERVER['HTTP_USER_AGENT'])) {
     http_response_code(403);
@@ -181,6 +187,12 @@ function me($key = 'all'): array|string|null
     } else {
         return null;
     }
+}
+
+function __naoAutorizado__($httpCode = 401)
+{
+    header("HTTP/1.1 $httpCode");
+    die('Nao Autorizado!');
 }
 
 /*function request_content(string $pProjeto = PROJETO)

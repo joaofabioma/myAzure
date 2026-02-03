@@ -1,5 +1,10 @@
 <?php
 // partials/scripts.php
+if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
+    header('Location: /', true, 301);
+    exit();
+}
+
 $data = json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 return <<<HTML
 <script>

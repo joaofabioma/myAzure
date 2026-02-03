@@ -1,5 +1,8 @@
 <?php
-
+if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
+	header('Location: /', true, 301);
+	exit();
+}
 return <<<HTML
 <meta charset="UTF-8">
     <title>Horas por Dia - Azure DevOps</title>

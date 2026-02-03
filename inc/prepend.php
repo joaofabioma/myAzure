@@ -1,5 +1,9 @@
 <?php
 // inc/prepend.php
+if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
+    header('Location: /', true, 301);
+    exit();
+}
 
 $env = parse_ini_file(__DIR__ . '/../.env') ?: [];
 $env['PROJECTS'] =  array_map('trim', explode(',', $env['PROJECTS'])) ?? [];
