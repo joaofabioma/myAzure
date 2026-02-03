@@ -1,6 +1,8 @@
 <?php
-$env = parse_ini_file(__DIR__ . '/../.env');
-$env['PROJECTS'] = explode(',', $env['PROJECTS']);
+// inc/prepend.php
+
+$env = parse_ini_file(__DIR__ . '/../.env') ?: [];
+$env['PROJECTS'] =  array_map('trim', explode(',', $env['PROJECTS'])) ?? [];
 
 !defined('ORG') && define('ORG', $env['ORGANIZATION']);
 !defined('PAT') && define('PAT', $env['PERSONAL_ACESS_TOKEN']);
@@ -9,3 +11,4 @@ $env['PROJECTS'] = explode(',', $env['PROJECTS']);
 !defined('PROJETO') && define('PROJETO', $env['PROJECT_DEFAULT']);
 !defined('EDEV') && define('EDEV', $env['EMAIL_DEV']);
 !defined('TIMER') && define('TIMER', $env['TEMPO_RECARREGAR_PAGINA_MINUTOS']);
+!defined('ONLINE') && define('ONLINE', TRUE);
