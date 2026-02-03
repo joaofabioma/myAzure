@@ -1,9 +1,30 @@
 <?php
 header('X-Robots-Tag: noindex, nofollow, noarchive');
 require __DIR__ . '/inc/prepend.php';
-if(empty($_SERVER['HTTP_USER_AGENT'])) {
+if (empty($_SERVER['HTTP_USER_AGENT'])) {
     http_response_code(403);
     exit;
+}
+
+function _request_get(string $pUrl)
+{
+    $curl = curl_init($pUrl);
+    $curl_opt = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: " . 'Basic ' . base64_encode(":" . PAT),
+            'Accept: application/json'
+        ]
+    ];
+    //die(print('Basic ' . base64_encode(":" . PAT))); // para usar no Postman, se nao souber usar scripts
+    curl_setopt_array($curl, $curl_opt);
+    $response = curl_exec($curl);
+    if ($response === false) {
+        die('Erro CURL: ' . curl_error($curl) . __LINE__);
+    } else {
+        $curl = null;
+        return $response;
+    }
 }
 
 function tableHead(string $vTittle = ''): string
@@ -75,60 +96,47 @@ function _urlTasks($projeto)
     return $url;
 }
 
-function allProjects(string $pOrganization = ORG)
+function allProjects(string $pOrganization = ORG): void
 {
+    if (ONLINE === FALSE) {
+        return;
+    }
+
     $url = "https://dev.azure.com/$pOrganization/_apis/projects";
-    $_pat = PAT;
-    $auth = 'Basic ' . base64_encode(":$_pat");
-    $curl = curl_init($url);
-    curl_setopt_array($curl, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            "Authorization: $auth ",
-            'Accept: application/json'
-        ]
-    ]);
-    $response = curl_exec($curl);
-    if ($response === false) {
-        die('Erro CURL: ' . curl_error($curl) . __LINE__);
-    } else {
-        $res = json_decode($response, true);
-        if (is_array($res)) {
-            file_put_contents(__DIR__ . '/data/projetos.json', $response); // emergencia ou para DEV
-        }
-        $res = null;
+    $response = _request_get($url);
+    $res = json_decode($response, true);
+    if (!empty($res) && is_array($res)) {
+        file_put_contents(__DIR__ . '/data/projetos.json', $response); // emergencia ou para DEV
     }
-    $curl = null;
+    $res = $response = null;
 }
 
-function allUsers(string $pOrganization = ORG)
+function allUsers(string $pOrganization = ORG): void
 {
+    if (ONLINE === FALSE) {
+        return;
+    }
     $url = "https://analytics.dev.azure.com/$pOrganization/_odata/v4.0-preview/Users";
-    $_pat = PAT;
-    $auth = 'Basic ' . base64_encode(":$_pat");
-    $curl = curl_init($url);
-    curl_setopt_array($curl, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            "Authorization: $auth ",
-            'Accept: application/json'
-        ]
-    ]);
-    $response = curl_exec($curl);
-    if ($response === false) {
-        die('Erro CURL: ' . curl_error($curl) . __LINE__);
-    } else {
-        $res = json_decode($response, true);
-        if (is_array($res)) {
-            file_put_contents(__DIR__ . '/data/users.json', $response); // emergencia ou para DEV
-        }
-        $res = null;
+    $response = _request_get($url);
+    $res = json_decode($response, true);
+    if (!empty($res) && is_array($res)) {
+        file_put_contents(__DIR__ . '/data/users.json', $response); // emergencia ou para DEV
     }
-    $curl = null;
+    $response = null;
 }
 
-function _me(string $pOrganization = ORG)
+/**
+ * Busca usuario logado no Azure DevOps, precisa ser informado no env
+ * EMAIL_DEV=nome.sobrenome@dominio.com.br
+ * @var string $pOrganization ORG = EmpresaSoftware
+ * @return void
+ */
+function _me(string $pOrganization = ORG): void
 {
+    if (ONLINE === FALSE) {
+        return;
+    }
+
     $me = [];
     allUsers($pOrganization);
     $all = file_get_contents(__DIR__ . '/data/users.json');
@@ -142,6 +150,12 @@ function _me(string $pOrganization = ORG)
     file_put_contents(__DIR__ . '/data/me.json', json_encode($me)); // emergencia ou para DEV
 }
 
+/**
+ * Retorna dados do usuario logado no Azure, Dados ja carregados antes
+ * @param string $key = 'all', 'UserSK','UserId', 'UserName' ou 'UserEmail'
+ * @return array|string|null
+ * @example $user = me('UserSK');
+ */
 function me($key = 'all'): array|string|null
 {
     /*
@@ -169,30 +183,12 @@ function me($key = 'all'): array|string|null
     }
 }
 
-function request_content(string $pProjeto = PROJETO)
+/*function request_content(string $pProjeto = PROJETO)
 {
-    $_pat = PAT; // Personal Access Token - _ODATA
     $url = _urlTasks($pProjeto);
-    $auth = 'Basic ' . base64_encode(":$_pat");
-    //die(print($auth)); // para usar no Postman, se nao souber usar scripts
-
-    $ch = null;
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            "Authorization: $auth",
-            'Accept: application/json'
-        ]
-    ]);
-
-    $response = curl_exec($ch);
-    if ($response === false) {
-        die('Erro CURL: ' . curl_error($ch) . __LINE__);
-    }
-    $ch = null;
+    $response = _request_get($url);
     return $response;
-}
+}*/
 
 function dados_agrupados(array $dados = []): array
 {
@@ -206,7 +202,9 @@ function dados_agrupados(array $dados = []): array
             $grouped[$key] = [
                 'hours' => 0.0,
                 'total' => 0,
-                'tarefas' => []
+                'tarefas' => [],
+                'correcoes' => 0,
+                'corrigir' => [],
             ];
         }
 
@@ -223,6 +221,17 @@ function dados_agrupados(array $dados = []): array
             }
         }
         $grouped[$key]['hours'] += $hours;
+
+        $completedWork = $val['CompletedWork'] ?? 0;
+        $OriginalEstimate = $val['OriginalEstimate'] ?? 0;
+        if ((bool)($completedWork == $OriginalEstimate) && $completedWork !== 0) {
+            $grouped[$key]['correcoes'] += 1;
+            if (!in_array($r['WorkItemId'], $grouped[$key]['corrigir'], true)) {
+                $grouped[$key]['corrigir'][] = $r['WorkItemId'];
+            }
+        }
+
+
 
         // identificar id e título da tarefa (tentativa por chaves comuns)
         $id = null;
@@ -251,20 +260,21 @@ function dados_agrupados(array $dados = []): array
     return $grouped;
 }
 
-allProjects();
-_me();
-
 if (isset($qual)) {
+    // var_dump($qual);
+    allProjects();
+    _me();
+
     $dados = [];
     $json = [];
-    $usuario = me('UserSK');
-    $projects     = PROJ;
-    $intervalo = isset($qual) ? intervalo($qual) : ["ini" => null, "fim" => null];
+    $usuario    = me('UserSK');
+    $projects   = PROJ;
+    $intervalo  = isset($qual) ? intervalo($qual) : ["ini" => null, "fim" => null];
     $dataInicio = $intervalo["ini"];
     $dataFim    = $intervalo["fim"];
 
 
-    if (file_exists(__DIR__ . '/data/' . "$qual.json") && false) {
+    if (file_exists(__DIR__ . '/data/' . "$qual.json") && ONLINE === false) {
         echo PHP_EOL . '<p>carregando do arquivo</p>' . PHP_EOL;
         $arrayjson = file_get_contents(__DIR__ . '/data/' . "$qual.json");
         $dados = json_decode($arrayjson, true);
@@ -272,25 +282,23 @@ if (isset($qual)) {
 
     if (count($dados) === 0) {
         //multiprojeto
-        foreach ($projects as $value) {
-            $response = request_content($value);
+        foreach ($projects as $projeto) {
+            $url = _urlTasks($projeto);
+            $response = _request_get($url);
             $jd = json_decode($response, true);
 
             //preciso garantir que exista, nao seja vazio e seja array
             if (isset($jd['value']) && (!empty($jd['value'])) && (is_array($jd['value']))) {
                 $values = $jd['value'];
-                $json = array_merge($json, $values);
+                $dados = array_merge($dados, $values);
             }
         }
-
-        //está assim apenas por causa da variavel, remover $dados da problema ao buscar os dados
-        $dados = $json; //$json['value']; //unico projeto
-        file_put_contents(__DIR__ . '/data/' ."$qual.json", json_encode($dados)); // emergencia ou para DEV
-        $json = null; //libera memoria
+        file_put_contents(__DIR__ . '/data/' . "$qual.json", json_encode($dados)); // emergencia ou para DEV
     }
 
     $startTs = strtotime($dataInicio);
     $endTs = strtotime($dataFim);
+    $usuario = me('UserSK');
 
     $dados = array_values(array_filter($dados, function ($val) use ($startTs, $endTs, $usuario) {
         // filtrar por AssignedTo
@@ -315,7 +323,9 @@ if (isset($qual)) {
             'date' => $d,
             'hours' => $info['hours'],
             'total' => $info['total'],
-            'tarefas' => $info['tarefas']
+            'tarefas' => $info['tarefas'],
+            'correcoes' => $info['correcoes'],
+            'corrigir' => $info['corrigir'],
         ];
     }
 }
