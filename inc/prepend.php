@@ -16,3 +16,4 @@ $env['PROJECTS'] =  array_map('trim', explode(',', $env['PROJECTS'])) ?? [];
 !defined('EDEV') && define('EDEV', $env['EMAIL_DEV']);
 !defined('TIMER') && define('TIMER', $env['TEMPO_RECARREGAR_PAGINA_MINUTOS']);
 !defined('ONLINE') && define('ONLINE', TRUE);
+!defined('DEBUG') && define('DEBUG', FALSE); // colocar no .env

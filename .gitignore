@@ -3,3 +3,4 @@
 /vendor
 /.history
 /data/*.json
+logs/performance.log

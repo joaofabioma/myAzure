@@ -2,30 +2,83 @@
 header('X-Robots-Tag: noindex, nofollow, noarchive');
 date_default_timezone_set('America/Cuiaba');
 setlocale(LC_TIME, 'pt_BR', 'pt_BR.utf-8', 'pt_BR.utf-8', 'portuguese');
+require __DIR__ . '/inc/prepend.php';
+
 if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
     header('Location: /', true, 301);
     exit();
 }
-require __DIR__ . '/inc/prepend.php';
+$ini_app = perf_start('App', __FILE__, __LINE__);
+
+$ini_prepend = perf_start('Inicio Prepend', __FILE__, __LINE__);
+
+perf_end('Inclusao Prepend', $ini_prepend, __FILE__, __LINE__);
 if (empty($_SERVER['HTTP_USER_AGENT'])) {
     http_response_code(403);
     exit;
 }
 
+function performanceTimestamp(): string
+{
+    $dt = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)));
+    $ms = substr($dt->format('u'), 0, 3);
+    return $dt->format('Y-m-d H:i:s') . ':' . $ms;
+}
+
+function perf_log(string $acao, string $arquivo, int $linha): void
+{
+    if (empty($acao)) {
+        throw new InvalidArgumentException('Ação não pode ser vazia');
+    }
+
+    $logDir = __DIR__ . '/logs';
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0777, true);
+    }
+    $linhaLog = performanceTimestamp() . " - {$arquivo} - {$linha} - {$acao}" . PHP_EOL;
+    file_put_contents($logDir . '/performance.log', $linhaLog, FILE_APPEND | LOCK_EX);
+}
+
+function perf_start(string $acao, string $arquivo, int $linha): float
+{
+    if (empty($acao)) {
+        throw new InvalidArgumentException('Ação não pode ser vazia');
+    }
+    if (DEBUG === false) return 0;
+    perf_log("INI - $acao", $arquivo ?? '-', $linha);
+    return microtime(true);
+}
+
+function perf_end(string $acao, float $inicio, string $arquivo, int $linha): void
+{
+    if (DEBUG === false) return;
+    $elapsedMs = (microtime(true) - $inicio) * 1000;
+    perf_log("FIM- $acao" . ' | ' . number_format($elapsedMs, 3, '.', '') . 'ms', $arquivo ?? '-', $linha);
+}
+
 function _request_get(string $pUrl)
 {
     $curl = curl_init($pUrl);
+    if (strpos($pUrl, 'WorkItems') !== false) {
+        $pUrl = urlencode($pUrl);
+    }
     $curl_opt = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             "Authorization: " . 'Basic ' . base64_encode(":" . PAT),
-            'Accept: application/json'
+            'Accept: application/json',
+            'Content-Type: application/json'
         ]
     ];
     //die(print('Basic ' . base64_encode(":" . PAT))); // para usar no Postman, se nao souber usar scripts
     curl_setopt_array($curl, $curl_opt);
     $response = curl_exec($curl);
     if ($response === false) {
+        if (DEBUG === true) {
+            $info =  curl_getinfo($curl);
+            var_dump($info);
+            die();
+        }
         die('Erro CURL: ' . curl_error($curl) . __LINE__);
     } else {
         $curl = null;
@@ -93,12 +146,19 @@ function intervalo(string $mesAno): array
     return [
         'ini' => $dataInicio,
         'fim' => $dataFim,
+        'mes' => (int)$mesNum,
+        'ano' => $ano,
     ];
 }
 
-function _urlTasks($projeto)
+function _urlTasks($projeto, $mes, $ano, $pEmail)
 {
+    $filter = "month(Custom_Prazoss) eq %s and year(Custom_Prazoss) eq %s and AssignedTo/UserEmail eq '%s'";
+    $filter = sprintf($filter, $mes, $ano, $pEmail);
+    $filter = urlencode($filter);
     $url = sprintf(UTASK, ORG, $projeto);
+    $url .= '&$filter=' . $filter;
+    perf_log('URL_REQUEST: ' . $url, __FILE__, __LINE__);
     return $url;
 }
 
@@ -273,30 +333,46 @@ function dados_agrupados(array $dados = []): array
 }
 
 if (isset($qual)) {
-    // var_dump($qual);
-    allProjects();
-    _me();
+    $ini_principal = perf_start('Processamento Principal', __FILE__, __LINE__);
 
+    $ini_request_projects = perf_start('Processamento Request - AllProjects', __FILE__, __LINE__);
+    allProjects();
+    perf_end('Processamento Request - AllProjects', $ini_request_projects, __FILE__, __LINE__);
+
+    $ini_request = perf_start('Processamento Request - _me', __FILE__, __LINE__);
+    _me();
+    perf_end('Processamento Request - _me', $ini_request_projects, __FILE__, __LINE__);
+
+    $ini_var = perf_start('Carregamento Variaveis', __FILE__, __LINE__);
     $dados = [];
     $json = [];
     $usuario    = me('UserSK');
+    $umail = me('UserEmail');
     $projects   = PROJ;
     $intervalo  = isset($qual) ? intervalo($qual) : ["ini" => null, "fim" => null];
     $dataInicio = $intervalo["ini"];
     $dataFim    = $intervalo["fim"];
+    $mes        = $intervalo["mes"];
+    $ano        = $intervalo["ano"];
+    perf_end('Carregamento Variaveis', $ini_var, __FILE__, __LINE__);
 
 
     if (file_exists(__DIR__ . '/data/' . "$qual.json") && ONLINE === false) {
+        perf_log('carregar dados do arquivo cache', __FILE__, __LINE__);
         echo PHP_EOL . '<p>carregando do arquivo</p>' . PHP_EOL;
         $arrayjson = file_get_contents(__DIR__ . '/data/' . "$qual.json");
         $dados = json_decode($arrayjson, true);
     }
 
     if (count($dados) === 0) {
+        $perfFetch = perf_start('Busca dados API', __FILE__, __LINE__);
         //multiprojeto
         foreach ($projects as $projeto) {
-            $url = _urlTasks($projeto);
+            $url = _urlTasks($projeto, $mes, $ano, $umail);
+            $perf_request_projeto = perf_start("Request Projeto: $projeto", __FILE__, __LINE__);
             $response = _request_get($url);
+            perf_end("Request Projeto: $projeto", $perf_request_projeto, __FILE__, __LINE__);
+
             $jd = json_decode($response, true);
 
             //preciso garantir que exista, nao seja vazio e seja array
@@ -306,17 +382,15 @@ if (isset($qual)) {
             }
         }
         file_put_contents(__DIR__ . '/data/' . "$qual.json", json_encode($dados)); // emergencia ou para DEV
+        perf_end('Busca dados API', $perfFetch, __FILE__, __LINE__);
     }
 
     $startTs = strtotime($dataInicio);
     $endTs = strtotime($dataFim);
-    $usuario = me('UserSK');
 
-    $dados = array_values(array_filter($dados, function ($val) use ($startTs, $endTs, $usuario) {
-        // filtrar por AssignedTo
-        if (!isset($val['AssignedToUserSK']) || $val['AssignedToUserSK'] !== $usuario) return false;
-
-        // obter data do registro
+    $perf_array_filter = perf_start('Filtragem dados retornados da API', __FILE__, __LINE__);
+    $dados = array_values(array_filter($dados, function ($val) use ($startTs, $endTs, $umail) {
+        if (!isset($val['AssignedTo']['UserEmail']) || $val['AssignedTo']['UserEmail'] !== $umail) return false;
         $rawDate = $val['Custom_Prazoss']; // ?? ($val['date'] ?? null);
         if (empty($rawDate)) return false;
 
@@ -325,11 +399,18 @@ if (isset($qual)) {
 
         return $ts >= $startTs && $ts <= $endTs;
     }));
+    perf_end('Filtragem dados retornados da API', $perf_array_filter, __FILE__, __LINE__);
 
+
+    $perf_agrupamento_dados = perf_start('Agrupamento dados Filtrados', __FILE__, __LINE__);
     $grouped = dados_agrupados($dados);
+    perf_end('Agrupamento dados Filtrados', $perf_agrupamento_dados, __FILE__, __LINE__);
+
     // Ordena por data e monta novo array de saída com campos: date, hours, total, tarefas
     ksort($grouped);
     $dados = [];
+
+    $perf_html = perf_start('Preparação Dados HTML', __FILE__, __LINE__);
     foreach ($grouped as $d => $info) {
         $dados[] = [
             'date' => $d,
@@ -340,4 +421,7 @@ if (isset($qual)) {
             'corrigir' => $info['corrigir'],
         ];
     }
+    perf_end('Preparação Dados HTML', $perf_html, __FILE__, __LINE__);
+    perf_end('Processamento Principal', $ini_request_projects, __FILE__, __LINE__);
 }
+perf_end('App', $ini_app, __FILE__, __LINE__);
