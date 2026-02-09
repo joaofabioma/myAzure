@@ -1,0 +1,42 @@
+{
+  "$schema": "https://getcomposer.org/schema.json",
+  "name": "joaofabioma/myazure",
+  "description": "Visualizacao e Controle Azure",
+  "keywords": [
+    "azure"
+  ],
+  "homepage": "https://github.com/joaofabioma/myAzure",
+  "type": "project",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    },
+    "files": [
+      "functions.php"
+    ]
+  },
+  "authors": [
+    {
+      "name": "JoaoFAbioMA",
+      "email": "amarall.jf@gmail.com",
+      "role": "Developer"
+    }
+  ],
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=8.5.1"
+  },
+  "scripts": {
+    "setup": [
+      "composer install",
+      "@php -r \"file_exists('.env') || copy('.env-example', '.env');\""
+    ]
+  },
+  "config": {
+    "platform-check": true,
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}
