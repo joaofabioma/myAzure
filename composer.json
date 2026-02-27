@@ -11,10 +11,7 @@
   "autoload": {
     "psr-4": {
       "App\\": "src/"
-    },
-    "files": [
-      "functions.php"
-    ]
+    }
   },
   "authors": [
     {
@@ -32,6 +29,12 @@
     "setup": [
       "composer install",
       "@php -r \"file_exists('.env') || copy('.env-example', '.env');\""
+    ],
+    "post-install-cmd": [
+      "@php -r \"include 'inc/const.php'; file_put_contents('VERSION', VERSION);\""
+    ],
+    "post-update-cmd": [
+      "@php -r \"include 'inc/const.php'; file_put_contents('VERSION', VERSION);\""
     ]
   },
   "config": {
