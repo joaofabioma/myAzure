@@ -13,7 +13,7 @@ $phpcode =
     "<?php
 \$qual = basename(__FILE__, '.php');
 
-require_once __DIR__ . '/functions.php';
+require __DIR__ . '/functions.php';
 
 ?>
 <!DOCTYPE html>
@@ -60,6 +60,15 @@ require_once __DIR__ . '/functions.php';
                     </tr>
                 <?php endforeach ?>
             </tbody>
+            <tfoot>
+                <tr>
+                    <td><?= intval(\$foot['date'] ?? 0) ?></td>
+                    <td><?= number_format(floatval(\$foot['hours'] ?? 0), 2, ',', '.') ?></td>
+                    <td><?= intval(\$foot['total'] ?? 0) ?></td>
+                    <td><?= intval(\$foot['correcoes'] ?? 0) ?></td>
+                    <td><?= intval(\$foot['tarefas'] ?? 0) ?></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 

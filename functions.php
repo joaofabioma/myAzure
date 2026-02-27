@@ -409,18 +409,27 @@ if (isset($qual)) {
     // Ordena por data e monta novo array de saída com campos: date, hours, total, tarefas
     ksort($grouped);
     $dados = [];
+    $foot = [];
+
 
     $perf_html = perf_start('Preparação Dados HTML', __FILE__, __LINE__);
     foreach ($grouped as $d => $info) {
         $dados[] = [
             'date' => $d,
-            'hours' => $info['hours'],
-            'total' => $info['total'],
-            'tarefas' => $info['tarefas'],
-            'correcoes' => $info['correcoes'],
+            'hours' => $info['hours'], //  7.63
+            'total' => $info['total'], // 12
+            'tarefas' => $info['tarefas'], // []
+            'correcoes' => $info['correcoes'], // 0
             'corrigir' => $info['corrigir'],
         ];
+
+        $foot['date'] += 1;
+        $foot['hours'] += $info['hours'] ?? 0;
+        $foot['tarefas'] += count($info['tarefas']) ?? 0;
+        $foot['total'] += $info['total'] ?? 0;
+        $foot['correcoes'] += $info['correcoes'] ?? 0;
     }
+
     perf_end('Preparação Dados HTML', $perf_html, __FILE__, __LINE__);
     perf_end('Processamento Principal', $ini_request_projects, __FILE__, __LINE__);
 }
