@@ -1,11 +1,10 @@
 <?php
 // partials/contador.php
+require __DIR__ . '/../vendor/autoload.php';
+\App\Class\Security::validateRequestByFile(__FILE__);
+
 // Não usar echo/return aqui, vamos incluir diretamente o HTML/JS
 $ultimaAtualizacao = date('d/m/Y H:i:s');
-if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
-	header('Location: /', true, 301);
-	exit();
-}
 ?>
 
 <div id="contador-relogio" style="

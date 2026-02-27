@@ -1,8 +1,7 @@
 <?php
-if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
-	header('Location: /', true, 301);
-	exit();
-}
+require __DIR__ . '/../vendor/autoload.php';
+\App\Class\Security::validateRequestByFile(__FILE__);
+
 return <<<HTML
 <meta charset="UTF-8">
     <title>Horas por Dia - Azure DevOps</title>

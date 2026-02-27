@@ -1,9 +1,7 @@
 <?php
 // partials/scripts.php
-if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
-    header('Location: /', true, 301);
-    exit();
-}
+require __DIR__ . '/../vendor/autoload.php';
+\App\Class\Security::validateRequestByFile(__FILE__);
 
 $data = json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 return <<<HTML
