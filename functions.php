@@ -413,6 +413,7 @@ if (isset($qual)) {
 
 
     $perf_html = perf_start('Preparação Dados HTML', __FILE__, __LINE__);
+    $foot = ['date' => 0, 'hours' => 0, 'tarefas' => 0, 'total' => 0, 'correcoes' => 0];
     foreach ($grouped as $d => $info) {
         $dados[] = [
             'date' => $d,
