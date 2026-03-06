@@ -11,7 +11,7 @@
         color: #2c3e50;
         padding: 20px;
         min-height: 100vh;
-        line-height: 1.6;
+        line-height: 1.5;
     }
 
     .container {
@@ -109,7 +109,7 @@
 
     /* Tfoot moderno */
     table tfoot tr {
-        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        background: linear-gradient0(135deg, #9ad0f5 0%, #3192d3 100%);
     }
 
     table tfoot tr:hover td {
