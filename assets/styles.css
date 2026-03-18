@@ -70,7 +70,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        padding: 18px 15px;
+        padding: 8px 15px;
         font-size: 0.9rem;
         border: none;
         position: relative;
@@ -109,7 +109,7 @@
 
     /* Tfoot moderno */
     table tfoot tr {
-        background: linear-gradient0(135deg, #9ad0f5 0%, #3192d3 100%);
+        background: linear-gradient(135deg, #9ad0f5 0%, #3192d3 100%);
     }
 
     table tfoot tr:hover td {
@@ -374,4 +374,78 @@
         visibility: visible;
         bottom: calc(100% + 10px);
     }
-    
+
+    /* Pagina Inicial */
+    @font-face {
+        font-family: 'FontAwesome';
+        src: url(/assets/fonts/fontawesome-webfont.woff2) format('woff2');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    .icon-container {
+        margin-top: 30px;
+        width: 100%;
+        height: 60px;
+    }
+
+    .icon {
+        cursor: pointer;
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 60px;
+        /* margin-left: 12px; */
+        /* margin-right: 12px; */
+        border-radius: 30px;
+        overflow: hidden;
+    }
+
+    .fa-home:before {
+        content: "\f015";
+    }
+
+    .fa-columns:before {
+        content: "\f0db";
+    }
+
+    .fa {
+        display: inline-block;
+        font: normal normal normal 14px / 1 FontAwesome;
+        font-size: inherit;
+        text-rendering: auto;
+        left: 1rem;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .icon::before,
+    .icon::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        transition: all 0.25s ease;
+        border-radius: 30px;
+    }
+
+    .icon i {
+        position: relative;
+        color: #FFFFFF;
+        font-size: 30px;
+        margin-top: 15px;
+        transition: all 0.25s ease;
+    }
+
+    .icon-fill::before {
+        transition-duration: 0.5s;
+        box-shadow: inset 0px 0px 7px 2px #4c96d982;
+    }
+
+    .icon-fill:hover::before {
+        box-shadow: inset 0 0 0 60px #4c96d9;
+    }
+
+    /* Pagina Inicial */
