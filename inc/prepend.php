@@ -1,6 +1,7 @@
 <?php
 // inc/prepend.php
 require __DIR__ . '/../vendor/autoload.php';
+
 \App\Class\Security::validateRequestByFile(__FILE__);
 
 require __DIR__ . '/const.php';
@@ -17,3 +18,4 @@ $env['PROJECTS'] =  array_map('trim', explode(',', $env['PROJECTS'])) ?? [];
 !defined('TIMER') && define('TIMER', $env['TEMPO_RECARREGAR_PAGINA_MINUTOS']);
 !defined('ONLINE') && define('ONLINE', TRUE);
 !defined('DEBUG') && define('DEBUG', FALSE); // colocar no .env
+!defined('UACESS') && define('UACESS', $env['URL_ACCESS']); 
