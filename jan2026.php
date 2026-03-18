@@ -5,23 +5,35 @@ require __DIR__ . '/functions.php';
 
 ?>
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang='pt-br'>
 
 <head>
     <?= require __DIR__ . '/partials/head.php' ?>
 </head>
 
 <body>
-    <div class="container fade-in">
+    <div class='container fade-in'>
         <?php require __DIR__ . '/partials/contador.php'; ?>
 
-        <h2 style="margin-top: 50px;">📈 Visualização Gráfica</h2>
-        <canvas id="grafico" height="100"></canvas>
+        <a class='icon-container' href='/'>
+            <div class='icon icon-fill'>
+                <i class='fa fa-home'></i>
+            </div>
+        </a>
+
+        <a class='icon-container' target='_blank' href='/dashboard.php'>
+            <div class='icon icon-fill'>
+                <i class='fa fa-columns'></i>
+            </div>
+        </a>
+
+        <h2 style='margin-top: 50px;'>📈 Visualização Gráfica</h2>
+        <canvas id='grafico' height='100'></canvas>
 
         <h2>📊 Horas Trabalhadas por Dia</h2>
 
-        <div class="info-card">
-            <div class="status-update">
+        <div class='info-card'>
+            <div class='status-update'>
                 Sistema atualizado em tempo real | Auto-refresh a cada 30 minutos
             </div>
         </div>
@@ -50,11 +62,11 @@ require __DIR__ . '/functions.php';
             </tbody>
             <tfoot>
                 <tr>
-                    <td><?= intval($foot['date'] ?? 0) ?></td>
-                    <td><?= number_format(floatval($foot['hours'] ?? 0), 2, ',', '.') ?></td>
-                    <td><?= intval($foot['total'] ?? 0) ?></td>
-                    <td><?= intval($foot['correcoes'] ?? 0) ?></td>
-                    <td><?= intval($foot['tarefas'] ?? 0) ?></td>
+                    <td><span class="tfoot-label">📅 Dias</span><span class="tfoot-value"><?= intval($foot['date'] ?? 0) ?></span></td>
+                    <td><span class="tfoot-label">⏱️ Total</span><span class="tfoot-value"><?= number_format(floatval($foot['hours'] ?? 0), 2, ',', '.') ?>h</span></td>
+                    <td><span class="tfoot-label">📊 Qtd</span><span class="tfoot-value"><?= intval($foot['total'] ?? 0) ?></span></td>
+                    <td><span class="tfoot-label">🔧 Correções</span><span class="tfoot-value"><?= intval($foot['correcoes'] ?? 0) ?></span></td>
+                    <td><span class="tfoot-label">📝 Tarefas</span><span class="tfoot-value"><?= intval($foot['tarefas'] ?? 0) ?></span></td>
                 </tr>
             </tfoot>
         </table>
