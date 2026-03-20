@@ -54,7 +54,8 @@ $arquivosMesAno = obterArquivosMesAno();
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="icon" href="assets/Microsoft_Azure.svg" type="image/svg+xml">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <script src="assets/js/chart.js"></script>
     <style>
         /* Estilos para os cards de meses */
         .cards-container {

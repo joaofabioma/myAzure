@@ -10,7 +10,8 @@ return <<<HTML
     <link rel="icon" href="../assets/Microsoft_Azure.svg" type="image/svg+xml">
 
     <link rel="stylesheet" href="assets/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <script src="assets/js/chart.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 HTML;
