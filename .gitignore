@@ -6,3 +6,8 @@ VERSION
 /data/*.json
 logs/performance.log
 /[a-z][a-z][a-z]20[0-9][0-9].php
+.cursor/
+.vscode/
+.cursorignore
+*copy.php
+*bkp.php
