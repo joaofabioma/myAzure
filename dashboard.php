@@ -130,7 +130,7 @@ ksort($produtividadeDiaria);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure DevOps - Advanced Dashboard</title>
+    <title>Azure DevOps - Dashboard</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="assets/Microsoft_Azure.svg" type="image/svg+xml">
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
@@ -363,7 +363,7 @@ ksort($produtividadeDiaria);
     <header class="topbar">
         <div class="logo">
             <img src="assets/Microsoft_Azure.svg" width="32" alt="Azure" style="height: 1em;">
-            <span> Monitor</span>
+            <span> Dashboard</span>
         </div>
         <nav class="topbar-nav" aria-label="Navegação principal">
             <a href="index.php" class="nav-link">Dashboard Geral</a>
@@ -375,7 +375,7 @@ ksort($produtividadeDiaria);
     <div class="main-content">
         <div class="header">
             <div>
-                <h1 style="margin: 0; font-size: 1.5rem;">Dashboard de Performance</h1>
+                <h1 style="margin: 0; font-size: 1.5rem;">Performance</h1>
                 <p style="margin: 0; color: #7f8c8d;">Detalhes das tasks, horas, projetos e atividades</p>
             </div>
             <form method="GET" id="monthForm">
@@ -390,17 +390,17 @@ ksort($produtividadeDiaria);
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" style="border-left: 0.21rem solid #2fdf55cf;">
                 <span class="stat-label">Total de Horas</span>
                 <span class="stat-value" data-count-to="<?= htmlspecialchars((string)array_sum($produtividadeDiaria), ENT_QUOTES, 'UTF-8') ?>" data-decimals="2" data-suffix="h"><?= number_format(0, 2) ?>h</span>
                 <span style="font-size: 0.8rem; color: var(--accent);">↑ 12% vs mês anterior</span>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="border-left: 0.21rem solid #306ae6cf;">
                 <span class="stat-label">Tasks Concluídas</span>
                 <span class="stat-value" data-count-to="<?= count($dados) ?>" data-decimals="0">0</span>
                 <span style="font-size: 0.8rem; color: #7f8c8d;">Média de <?= number_format(count($dados) / (count($produtividadeDiaria) ?: 1), 1) ?> por dia</span>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="border-left: 0.21rem solid #e63030cf;">
                 <span class="stat-label">Inconsistências</span>
                 <span class="stat-value" style="color: var(--danger);" data-count-to="<?= count($audit['zeroHours']) ?>" data-decimals="0">0</span>
                 <span style="font-size: 0.8rem; color: var(--danger);">
@@ -408,12 +408,12 @@ ksort($produtividadeDiaria);
                     <?php if (count($audit['zeroHours']) === 0): ?>Nenhuma inconsistência encontrada<?php endif; ?>
                 </span>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="border-left: 0.21rem solid #e630cecf;">
                 <span class="stat-label">Diversidade de Projetos</span>
                 <span class="stat-value" data-count-to="<?= count($projetosHours) ?>" data-decimals="0">0</span>
                 <span style="font-size: 0.8rem; color: #7f8c8d;">Foco principal: <?= !empty($projetosHours) ? (string)array_search(max($projetosHours), $projetosHours) : '-' ?></span>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="border-left: 0.21rem solid #e9d700cf;">
                 <span class="stat-label">Não fechadas</span>
                 <span class="stat-value" data-count-to="<?= count($audit['open']) ?>" data-decimals="0">0</span>
                 <span style="font-size: 0.8rem; color: #7f8c8d;">Tarefas a fechar</span>
