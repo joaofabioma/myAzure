@@ -36,8 +36,62 @@ function obterArquivosMesAno()
     return $arquivos;
 }
 
+/** ID do arquivo do mês civil anterior (ex.: mar2025 → fev2025). */
+function idMesAnterior(?string $qual): ?string
+{
+    if ($qual === null || strlen($qual) !== 7) {
+        return null;
+    }
+    $mesStr = strtolower(substr($qual, 0, 3));
+    $ano = substr($qual, 3, 4);
+    $meses = meses();
+    if (!isset($meses[$mesStr]) || !is_numeric($ano)) {
+        return null;
+    }
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $ano . '-' . $meses[$mesStr] . '-01');
+    if (!$dt) {
+        return null;
+    }
+    $prev = $dt->modify('-1 month');
+    $flip = array_flip($meses);
+    $keyMes = $flip[$prev->format('m')] ?? null;
+    return $keyMes !== null ? $keyMes . $prev->format('Y') : null;
+}
+
+/** Soma CompletedWork no intervalo do mês, com o mesmo filtro do dashboard (e-mail e prazo). */
+function totalHorasMesFiltrado(string $idMes, $umail): ?float
+{
+    $path = __DIR__ . "/data/{$idMes}.json";
+    if (!is_file($path)) {
+        return null;
+    }
+    $allDataTasks = json_decode(file_get_contents($path), true) ?: [];
+    $intervalo = intervalo($idMes);
+    $dataIni = strtotime($intervalo['ini']);
+    $dataFim = strtotime($intervalo['fim']);
+
+    $filtered = array_filter($allDataTasks, function ($task) use ($dataIni, $dataFim, $umail) {
+        if ($umail && isset($task['AssignedTo']['UserEmail']) && $task['AssignedTo']['UserEmail'] !== $umail) {
+            return false;
+        }
+        $cpDate = $task['Custom_Prazoss'] ?? null;
+        if (empty($cpDate)) {
+            return false;
+        }
+        $cpDt = strtotime($cpDate);
+        return $cpDt !== false && $cpDt >= $dataIni && $cpDt <= $dataFim;
+    });
+
+    $total = 0.0;
+    foreach ($filtered as $task) {
+        $total += floatval($task['CompletedWork'] ?? 0);
+    }
+    return $total;
+}
+
 $arquivosDisponiveis = obterArquivosMesAno();
 $qual = $_GET['mes'] ?? ($arquivosDisponiveis[0]['id'] ?? null);
+$umail = me('UserEmail');
 
 $dados = [];
 $audit = [
@@ -55,7 +109,6 @@ if ($qual && file_exists(__DIR__ . "/data/$qual.json")) {
     $intervalo = intervalo($qual);
     $dataIni = strtotime($intervalo['ini']);
     $dataFim   = strtotime($intervalo['fim']);
-    $umail   = me('UserEmail');
 
     foreach ($allDataTasks as $task) {
         if (empty($task['Custom_Prazoss'] ?? null)) {
@@ -123,6 +176,33 @@ foreach ($dados as $task) {
 }
 
 ksort($produtividadeDiaria);
+
+$totalHorasAtual = array_sum($produtividadeDiaria);
+$comparacaoHorasMesAnterior = ['html' => '', 'color' => '#7f8c8d'];
+if ($qual) {
+    $idAnt = idMesAnterior($qual);
+    $horasAnt = ($idAnt !== null) ? totalHorasMesFiltrado($idAnt, $umail) : null;
+    if ($horasAnt === null) {
+        $comparacaoHorasMesAnterior['html'] = 'Sem dados do mês anterior';
+    } elseif ($horasAnt <= 0 && $totalHorasAtual <= 0) {
+        $comparacaoHorasMesAnterior['html'] = 'Igual ao mês anterior (0h)';
+    } elseif ($horasAnt <= 0 && $totalHorasAtual > 0) {
+        $comparacaoHorasMesAnterior['html'] = 'Mês anterior sem horas (não dá para calcular %)';
+    } else {
+        $pct = (($totalHorasAtual - $horasAnt) / $horasAnt) * 100;
+        if (abs($pct) < 0.05) {
+            $comparacaoHorasMesAnterior['html'] = '≈ igual ao mês anterior';
+        } elseif ($pct > 0) {
+            $comparacaoHorasMesAnterior['html'] = '↑ ' . number_format($pct, 1, ',', '') . '% vs mês anterior';
+            $comparacaoHorasMesAnterior['color'] = 'var(--accent)';
+        } else {
+            $comparacaoHorasMesAnterior['html'] = '↓ ' . number_format(abs($pct), 1, ',', '') . '% vs mês anterior';
+            $comparacaoHorasMesAnterior['color'] = 'var(--danger)';
+        }
+    }
+} else {
+    $comparacaoHorasMesAnterior['html'] = '—';
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -130,7 +210,7 @@ ksort($produtividadeDiaria);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure DevOps - Dashboard</title>
+    <title>Dashboard - Azure DevOps</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="assets/Microsoft_Azure.svg" type="image/svg+xml">
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
@@ -393,7 +473,7 @@ ksort($produtividadeDiaria);
             <div class="stat-card" style="border-left: 0.21rem solid #2fdf55cf;">
                 <span class="stat-label">Total de Horas</span>
                 <span class="stat-value" data-count-to="<?= htmlspecialchars((string)array_sum($produtividadeDiaria), ENT_QUOTES, 'UTF-8') ?>" data-decimals="2" data-suffix="h"><?= number_format(0, 2) ?>h</span>
-                <span style="font-size: 0.8rem; color: var(--accent);">↑ 12% vs mês anterior</span>
+                <span style="font-size: 0.8rem; color: <?= htmlspecialchars($comparacaoHorasMesAnterior['color'], ENT_QUOTES, 'UTF-8') ?>;"><?= htmlspecialchars($comparacaoHorasMesAnterior['html'], ENT_QUOTES, 'UTF-8') ?></span>
             </div>
             <div class="stat-card" style="border-left: 0.21rem solid #306ae6cf;">
                 <span class="stat-label">Tasks Concluídas</span>
