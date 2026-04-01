@@ -1,0 +1,131 @@
+/*
+ * Cópia direta do <style> do index.html de referência (flip + container).
+ * Não misturar aqui regras que alterem position/transform das faces.
+ */
+
+.text-center {
+    text-align: center;
+}
+
+.box-container {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding: 35px 15px;
+    width: 100%;
+}
+
+@media screen and (min-width: 1380px) {
+    .box-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 24px;
+    }
+}
+
+/* Grelha quando há muitos meses: mesmas classes, só acrescenta esta */
+.box-container.box-container--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 28px;
+    padding: 20px 0;
+}
+
+@media screen and (min-width: 1380px) {
+    .box-container.box-container--grid {
+        display: grid;
+        flex-direction: unset;
+        justify-content: unset;
+    }
+}
+
+.box-item {
+    position: relative;
+    -webkit-backface-visibility: hidden;
+    width: 415px;
+    margin-bottom: 35px;
+    max-width: 100%;
+}
+
+.box-container--grid .box-item {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.flip-box {
+    -ms-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+}
+
+.flip-box-front,
+.flip-box-back {
+    border-radius: 8px;
+    min-height: 350px;
+    -ms-transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+    -webkit-transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.flip-box-front {
+    -ms-transform: rotateY(0deg);
+    -webkit-transform: rotateY(0deg);
+    transform: rotateY(0deg);
+    -webkit-transform-style: preserve-3d;
+    -ms-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.flip-box:hover .flip-box-front {
+    -ms-transform: rotateY(-180deg);
+    -webkit-transform: rotateY(-180deg);
+    transform: rotateY(-180deg);
+    -webkit-transform-style: preserve-3d;
+    -ms-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.flip-box-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    -ms-transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+    transform: rotateY(180deg);
+    -webkit-transform-style: preserve-3d;
+    -ms-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.flip-box:hover .flip-box-back {
+    -ms-transform: rotateY(0deg);
+    -webkit-transform: rotateY(0deg);
+    transform: rotateY(0deg);
+    -webkit-transform-style: preserve-3d;
+    -ms-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.flip-box .inner {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    padding: 60px;
+    outline: 1px solid transparent;
+    -webkit-perspective: inherit;
+    perspective: inherit;
+    z-index: 2;
+
+    transform: translateY(-50%) translateZ(60px) scale(0.94);
+    -webkit-transform: translateY(-50%) translateZ(60px) scale(0.94);
+    -ms-transform: translateY(-50%) translateZ(60px) scale(0.94);
+    top: 50%;
+}
