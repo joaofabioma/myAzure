@@ -1,7 +1,7 @@
 <?php
 header('X-Robots-Tag: noindex, nofollow, noarchive');
 date_default_timezone_set('America/Cuiaba');
-setlocale(LC_TIME, 'pt_BR', 'pt_BR.utf-8', 'pt_BR.utf-8', 'portuguese');
+setlocale(LC_TIME, 'pt_BR.UTF-8', 'pt_BR.utf-8', 'pt_BR');
 require __DIR__ . '/inc/prepend.php';
 
 if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
@@ -10,9 +10,9 @@ if (basename($_SERVER["REQUEST_URI"]) == basename(__FILE__)) {
 }
 $ini_app = perf_start('App', __FILE__, __LINE__);
 
-$ini_prepend = perf_start('Inicio Prepend', __FILE__, __LINE__);
+$ini_prepend = perf_start('Início Prepend', __FILE__, __LINE__);
 
-perf_end('Inclusao Prepend', $ini_prepend, __FILE__, __LINE__);
+perf_end('Inclusão Prepend', $ini_prepend, __FILE__, __LINE__);
 if (empty($_SERVER['HTTP_USER_AGENT'])) {
     http_response_code(403);
     exit;
@@ -72,7 +72,7 @@ function _request_get(string $pUrl)
             'Content-Type: application/json'
         ]
     ];
-    //die(print('Basic ' . base64_encode(":" . PAT))); // para usar no Postman, se nao souber usar scripts
+    //die(print('Basic ' . base64_encode(":" . PAT))); // para usar no Postman, se não souber usar scripts
     curl_setopt_array($curl, $curl_opt);
     $response = curl_exec($curl);
     if ($response === false) {
@@ -110,7 +110,6 @@ function _request_post(string $pUrl, $pPayload)
 
     curl_setopt_array($curl, $curl_opt);
     $response = curl_exec($curl);
-    // var_dump([], urlencode($pUrl), $curl_opt, $response);
     if ($response === false) {
         if (defined('DEBUG') && DEBUG === true) {
             $info = curl_getinfo($curl);
@@ -215,9 +214,7 @@ function allProjects(string $pOrganization = ORG): void
 
     $url = "https://dev.azure.com/$pOrganization/_apis/projects";
     $response = _request_get($url);
-    // var_dump($response);
     $res = json_decode($response, true);
-    // var_dump($res);
     if (!empty($res) && is_array($res)) {
         file_put_contents(__DIR__ . '/data/projetos.json', $response); // emergencia ou para DEV
     }
@@ -288,7 +285,7 @@ function allUsers(string $pOrganization = ORG): void
 }
 
 /**
- * Busca usuario logado no Azure DevOps, precisa ser informado no env
+ * Busca usuário logado no Azure DevOps; precisa ser informado no .env
  * EMAIL_DEV=nome.sobrenome@dominio.com.br
  * @var string $pOrganization ORG = EmpresaSoftware
  * @return void
@@ -315,7 +312,7 @@ function _me(string $pOrganization = ORG): void
 }
 
 /**
- * Retorna dados do usuario logado no Azure, Dados ja carregados antes
+ * Retorna dados do usuário logado no Azure (dados já carregados antes)
  * @param string $key = 'all', 'UserSK','UserId', 'UserName' ou 'UserEmail'
  * @return array|string|null
  * @example $user = me('UserSK');
@@ -350,7 +347,7 @@ function me($key = 'all'): array |string|null
 function __naoAutorizado__($httpCode = 401)
 {
     header("HTTP/1.1 $httpCode");
-    die('Nao Autorizado!');
+    die('Não autorizado!');
 }
 
 /*function request_content(string $pProjeto = PROJETO) {
@@ -510,7 +507,7 @@ function tarefas_mes(array $pWorkItemsId = [], string $pOrganization = ORG)
     }
     $ids = implode(',', $pWorkItemsId);
     $url = sprintf(UTASK, $pOrganization, $ids);
-    perf_log('Request Tarefas Mes: ' . $url, __FILE__, __LINE__);
+    perf_log('Request tarefas do mês: ' . $url, __FILE__, __LINE__);
 
     $response = _request_get($url);
     $data = json_decode($response, true);
@@ -604,11 +601,73 @@ if (!function_exists('obterArquivosMesAno')) {
     }
 }
 
+if (!function_exists('resumoEstatisticasMesRelatorio')) {
+    /**
+     * Resumo para o verso do card na index (usa cache data/{id}.json, mesmo filtro de prazo/e-mail que o dashboard).
+     *
+     * @return array{tarefas:int, horas:float, abertas:int, fechadas:int, temArquivo:bool}
+     */
+    function resumoEstatisticasMesRelatorio(string $arquivoPhp): array
+    {
+        $base = pathinfo($arquivoPhp, PATHINFO_FILENAME);
+        if (!is_string($base) || strlen($base) !== 7) {
+            return ['tarefas' => 0, 'horas' => 0.0, 'abertas' => 0, 'fechadas' => 0, 'temArquivo' => false];
+        }
 
+        $id = strtolower($base);
+        $path = __DIR__ . '/data/' . $id . '.json';
+        if (!is_file($path)) {
+            return ['tarefas' => 0, 'horas' => 0.0, 'abertas' => 0, 'fechadas' => 0, 'temArquivo' => false];
+        }
+
+        $raw = file_get_contents($path);
+        $allDataTasks = json_decode($raw, true);
+        if (!is_array($allDataTasks)) {
+            return ['tarefas' => 0, 'horas' => 0.0, 'abertas' => 0, 'fechadas' => 0, 'temArquivo' => true];
+        }
+
+        $umail = me('UserEmail');
+        $intervalo = intervalo($id);
+        $dataIni = strtotime($intervalo['ini']);
+        $dataFim = strtotime($intervalo['fim']);
+
+        $filtered = array_values(array_filter($allDataTasks, function ($task) use ($dataIni, $dataFim, $umail) {
+            if ($umail && isset($task['AssignedTo']['UserEmail']) && $task['AssignedTo']['UserEmail'] !== $umail) {
+                return false;
+            }
+            $cpDate = $task['Custom_Prazoss'] ?? null;
+            if (empty($cpDate)) {
+                return false;
+            }
+            $cpDt = strtotime($cpDate);
+            return $cpDt !== false && $cpDt >= $dataIni && $cpDt <= $dataFim;
+        }));
+
+        $horas = 0.0;
+        $abertas = 0;
+        $fechadas = 0;
+        foreach ($filtered as $task) {
+            $horas += floatval($task['CompletedWork'] ?? 0);
+            if (($task['State'] ?? '') === 'Fechado') {
+                $fechadas++;
+            } else {
+                $abertas++;
+            }
+        }
+
+        return [
+            'tarefas' => count($filtered),
+            'horas' => $horas,
+            'abertas' => $abertas,
+            'fechadas' => $fechadas,
+            'temArquivo' => true,
+        ];
+    }
+}
 
 if (isset($qual)) {
     $data = hasAnalyticsAccess();
-    
+
     $ini_principal = perf_start('Processamento Principal', __FILE__, __LINE__);
 
     $ini_request_projects = perf_start('Processamento Request - AllProjects', __FILE__, __LINE__);
@@ -619,7 +678,7 @@ if (isset($qual)) {
     _me();
     perf_end('Processamento Request - _me', $ini_request_projects, __FILE__, __LINE__);
 
-    $ini_var = perf_start('Carregamento Variaveis', __FILE__, __LINE__);
+    $ini_var = perf_start('Carregamento Variáveis', __FILE__, __LINE__);
     $dados = [];
     $json = [];
     $usuario = me('UserSK');
@@ -633,7 +692,7 @@ if (isset($qual)) {
     $dataFimQ = $intervalo["qfim"];
     $mes = $intervalo["mes"];
     $ano = $intervalo["ano"];
-    perf_end('Carregamento Variaveis', $ini_var, __FILE__, __LINE__);
+    perf_end('Carregamento Variáveis', $ini_var, __FILE__, __LINE__);
 
 
     if (file_exists(__DIR__ . '/data/' . "$qual.json") && defined('ONLINE') && ONLINE === false) {
@@ -659,7 +718,7 @@ if (isset($qual)) {
         //            perf_end("Request Projeto: $projeto", $perf_request_projeto, __FILE__, __LINE__);
 
 
-        //preciso garantir que exista, nao seja vazio e seja array
+        // preciso garantir que exista, não seja vazio e seja array
         //if ((!empty($jd)) && (is_array($jd))) {
         //    $dados = array_merge($dados, $jd);
         //}
