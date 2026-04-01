@@ -558,9 +558,57 @@ function _parseWorkItems(array $pWorkItem = []): array
     return $value;
 }
 
-$data = hasAnalyticsAccess();
+// Função para identificar arquivos com padrão mmmyyyy.php
+if (!function_exists('obterArquivosMesAno')) {
+    function obterArquivosMesAno()
+    {
+        $arquivos = [];
+        $diretorio = __DIR__;
+        $meses = meses();
+
+        // Escaneia o diretório atual
+        $items = scandir($diretorio);
+
+        foreach ($items as $item) {
+            // Verifica se o arquivo tem extensão .php
+            if (substr($item, -4) === '.php') {
+                // Remove a extensão .php para análise
+                $nome = substr($item, 0, -4);
+
+                // Verifica se tem o padrão: 3 letras (mês) + 4 dígitos (ano)
+                if (strlen($nome) === 7) {
+                    $mes = strtolower(substr($nome, 0, 3));
+                    $ano = substr($nome, 3, 4);
+
+                    // Verifica se o mês existe e o ano é numérico
+                    if (isset($meses[$mes]) && is_numeric($ano) && strlen($ano) === 4) {
+                        $arquivos[] = [
+                            'arquivo' => $item,
+                            'mes' => $mes,
+                            'ano' => $ano,
+                            'mesNum' => $meses[$mes],
+                            'mesExtenso' => ucfirst($mes),
+                            'timestamp' => strtotime("$ano-{$meses[$mes]}-01")
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Ordena por timestamp (mais recente primeiro)
+        usort($arquivos, function ($a, $b) {
+            return $b['timestamp'] - $a['timestamp'];
+        });
+
+        return $arquivos;
+    }
+}
+
+
 
 if (isset($qual)) {
+    $data = hasAnalyticsAccess();
+    
     $ini_principal = perf_start('Processamento Principal', __FILE__, __LINE__);
 
     $ini_request_projects = perf_start('Processamento Request - AllProjects', __FILE__, __LINE__);
@@ -625,7 +673,7 @@ if (isset($qual)) {
     $endTs = strtotime($dataFim);
 
     $perf_array_filter = perf_start('Filtragem dados retornados da API', __FILE__, __LINE__);
-    if(is_null($dados)) die('Dados nulos, em desenvolvimento, verificar resposta da API e estrutura dos dados');
+    if (is_null($dados)) die('Dados nulos, em desenvolvimento, verificar resposta da API e estrutura dos dados');
     $dados = array_values(array_filter($dados, function ($val) use ($startTs, $endTs, $umail) {
         if (!isset($val['AssignedTo']['UserEmail']) || $val['AssignedTo']['UserEmail'] !== $umail)
             return false;
