@@ -242,45 +242,133 @@ function allUsers(string $pOrganization = ORG): void
         return;
     }
 
-    $allUsers = [];
-    $continuationToken = null;
+    $pat = defined('PAT') ? PAT : '';
+    $orgSeg = rawurlencode($pOrganization);
+    $allRawItems = [];
 
-    do {
-        $url = "https://vsaex.dev.azure.com/Loglab/_apis/MemberEntitlements?skip=0";
-
-        if ($continuationToken) {
-            $url .= "&continuationToken=" . urlencode($continuationToken);
+    $curlGetJson = static function (string $url, bool $withHeaders) use ($pat): array {
+        $curl = curl_init($url);
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Basic ' . base64_encode(':' . $pat),
+                'Accept: application/json',
+            ],
+        ];
+        if ($withHeaders) {
+            $opts[CURLOPT_HEADER] = true;
         }
-
-        $response = _request_get($url);
-
-        $headers = [];
-        $body = null;
-
-        // ⚠️ importante: sua função _request_get precisa retornar headers também
-        // Exemplo esperado:
-        // ['headers' => [...], 'body' => 'json...']
-        if (is_array($response)) {
-            $headers = $response['headers'] ?? [];
-            $body = $response['body'] ?? null;
-        } else {
-            $body = $response;
+        curl_setopt_array($curl, $opts);
+        $raw = curl_exec($curl);
+        if ($raw === false) {
+            $err = curl_error($curl);
+            curl_reset($curl);
+            die('Erro CURL Azure DevOps: ' . $err . ' - Linha ' . __LINE__);
         }
+        if (!$withHeaders) {
+            curl_reset($curl);
+            return ['body' => $raw, 'headers' => ''];
+        }
+        $headerSize = (int)curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        curl_reset($curl);
+        return [
+            'body' => substr($raw, $headerSize),
+            'headers' => substr($raw, 0, $headerSize),
+        ];
+    };
 
+    $continuationFromHeaders = static function (string $headerBlock): ?string {
+        foreach (preg_split("/\r\n|\n|\r/", $headerBlock) as $line) {
+            if (stripos($line, 'x-ms-continuationtoken:') === 0) {
+                return trim(substr($line, strlen('x-ms-continuationtoken:')));
+            }
+        }
+        return null;
+    };
+
+    // Documentação: GET .../userentitlements?top=&skip=&api-version=4.1-preview.1 (não "MemberEntitlements")
+    $top = 10000;
+    $skip = 0;
+    while (true) {
+        $url = "https://vsaex.dev.azure.com/{$orgSeg}/_apis/userentitlements"
+            . '?api-version=4.1-preview.1&top=' . $top . '&skip=' . $skip;
+        $body = $curlGetJson($url, false)['body'];
         $res = json_decode($body, true);
-
-        if (!empty($res['continuationToken'])) {
-            $allUsers = array_merge($allUsers, $res['items']);
+        $page = [];
+        if (is_array($res) && !empty($res['value']) && is_array($res['value'])) {
+            $page = $res['value'];
         }
+        if ($page === []) {
+            break;
+        }
+        $allRawItems = array_merge($allRawItems, $page);
+        $n = count($page);
+        $skip += $n;
+        if ($n < $top) {
+            break;
+        }
+    }
 
-        // 👇 aqui está o segredo
-        $continuationToken = $headers['x-ms-continuationtoken'] ?? null;
-    } while ($continuationToken);
+    // Fallback: Graph Users (menos permissões que member entitlement; costuma funcionar com PAT "Graph read")
+    if ($allRawItems === []) {
+        $continuationToken = null;
+        $pages = 0;
+        do {
+            $url = "https://vssps.dev.azure.com/{$orgSeg}/_apis/graph/users?api-version=7.0-preview";
+            if ($continuationToken !== null && $continuationToken !== '') {
+                $url .= '&continuationToken=' . rawurlencode($continuationToken);
+            }
+            $got = $curlGetJson($url, true);
+            $continuationToken = $continuationFromHeaders($got['headers']);
+            $res = json_decode($got['body'], true);
+            $page = [];
+            if (is_array($res) && !empty($res['value']) && is_array($res['value'])) {
+                $page = $res['value'];
+            }
+            if ($page !== []) {
+                $allRawItems = array_merge($allRawItems, $page);
+            }
+            if (($continuationToken === null || $continuationToken === '')
+                && is_array($res) && !empty($res['continuationToken'])) {
+                $continuationToken = $res['continuationToken'];
+            }
+            $pages++;
+            if ($pages > 500) {
+                break;
+            }
+        } while ($continuationToken !== null && $continuationToken !== '');
+    }
 
-    // salva tudo
+    $value = [];
+    foreach ($allRawItems as $item) {
+        if (isset($item['user']) && is_array($item['user'])) {
+            $user = $item['user'];
+            $lastAccessed = $item['lastAccessedDate'] ?? null;
+            $rowId = $item['id'] ?? null;
+        } else {
+            $user = $item;
+            $lastAccessed = null;
+            $rowId = $user['originId'] ?? $user['descriptor'] ?? null;
+        }
+        $subjectKind = strtolower((string)($user['subjectKind'] ?? ''));
+        if ($subjectKind !== '' && $subjectKind !== 'user') {
+            continue;
+        }
+        $email = $user['mailAddress'] ?? $user['principalName'] ?? '';
+        $value[] = [
+            'UserEmail' => $email,
+            'UserName' => $user['displayName'] ?? '',
+            'UserId' => (string)($user['originId'] ?? $rowId ?? ''),
+            'UserSK' => (string)($user['originId'] ?? $rowId ?? ''),
+            'AnalyticsUpdatedDate' => $lastAccessed,
+            'GitHubUserId' => null,
+            'UserType' => $user['subjectKind'] ?? null,
+        ];
+    }
+
     file_put_contents(
         __DIR__ . '/data/users.json',
-        json_encode($allUsers, JSON_PRETTY_PRINT)
+        json_encode(['value' => $value], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
     );
 }
 

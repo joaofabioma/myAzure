@@ -569,6 +569,7 @@ if ($qual) {
 
     <script>
         const auditData = <?= json_encode($audit) ?>;
+        const orgAzure = <?= json_encode(ORG, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
         const uacesso = <?= json_encode(UACESS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
         (function animateStatValues() {
@@ -610,7 +611,7 @@ if ($qual) {
             auditData[type].forEach(task => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><a href="${uacesso.replace('%s', 'Loglab').replace('%s', task.Project?.ProjectName).replace('%s', task.WorkItemId)}">${task.WorkItemId}</a></td>
+                    <td><a href="${uacesso.replace('%s', orgAzure).replace('%s', task.Project?.ProjectName).replace('%s', task.WorkItemId)}">${task.WorkItemId}</a></td>
                     <td style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${task.Title}</td>
                     <td>${task?.Activity || '-'}</td>
                     <td>${task.Project?.ProjectName || '-'}</td>
