@@ -82,12 +82,48 @@ function _request_get(string $pUrl)
             die();
         }
         die('Erro CURL na API Azure (Timeout ou Conexão): ' . curl_error($curl) . ' - Linha ' . __LINE__);
-    }
-    else {
+    } else {
         $curl = null;
         return $response;
     }
 }
+
+function _request_post(string $pUrl, $pPayload)
+{
+    $curl = curl_init($pUrl);
+    //if (strpos($pUrl, 'WorkItems') !== false) {
+    //    $pUrl = urlencode($pUrl);
+    //}
+    $curl_opt = [
+        CURLOPT_RETURNTRANSFER => true,
+        // CURLOPT_HEADER => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: " . 'Basic ' . base64_encode(":" . (defined('PAT') ? PAT : '')),
+            'Accept: application/json',
+            'Content-Type: application/json'
+        ],
+        CURLOPT_MAXREDIRS => 5,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => $pPayload,
+    ];
+
+    curl_setopt_array($curl, $curl_opt);
+    $response = curl_exec($curl);
+    // var_dump([], urlencode($pUrl), $curl_opt, $response);
+    if ($response === false) {
+        if (defined('DEBUG') && DEBUG === true) {
+            $info = curl_getinfo($curl);
+            var_dump($info);
+            die();
+        }
+        die('Erro CURL na API Azure (Timeout ou Conexão): ' . curl_error($curl) . ' - Linha ' . __LINE__);
+    } else {
+        $curl = null;
+        return $response;
+    }
+}
+
 
 function tableHead(string $vTittle = ''): string
 {
@@ -140,11 +176,14 @@ function intervalo(string $mesAno): array
         // Data de fim: último dia do mês
         $ultimoDia = date('t', strtotime("$ano-$mesNum-01"));
         $dataFim = "$ano-$mesNum-" . $ultimoDia . "T23:59:59Z";
-    }
-    else {
+        $dataInicioQry = "{$ano}-{$mesNum}-01T00:00:00.0000000";
+        $dataFimQry = "{$ano}-{$mesNum}-{$ultimoDia}T00:00:00.0000000";
+    } else {
         // Fallback para valores padrão
         $dataInicio = date('Y-m-01T00:00:00Z');
         $dataFim = date('Y-m-tT23:59:59Z');
+        $dataInicioQry = date('Y-m-01T00:00:00.0000000');
+        $dataFimQry = date('Y-m-tT23:59:59.0000000');
     }
 
     return [
@@ -152,6 +191,8 @@ function intervalo(string $mesAno): array
         'fim' => $dataFim,
         'mes' => (int)$mesNum,
         'ano' => $ano,
+        'qini' => $dataInicioQry,
+        'qfim' => $dataFimQry,
     ];
 }
 
@@ -174,11 +215,28 @@ function allProjects(string $pOrganization = ORG): void
 
     $url = "https://dev.azure.com/$pOrganization/_apis/projects";
     $response = _request_get($url);
+    // var_dump($response);
     $res = json_decode($response, true);
+    // var_dump($res);
     if (!empty($res) && is_array($res)) {
         file_put_contents(__DIR__ . '/data/projetos.json', $response); // emergencia ou para DEV
     }
     $res = $response = null;
+}
+
+function allUsers_OLD(string $pOrganization = ORG): void
+{
+    if (defined('ONLINE') && ONLINE === FALSE) {
+        return;
+    }
+    // $url = "https://analytics.dev.azure.com/$pOrganization/_odata/v4.0-preview/Users";
+    $url = "https://vssps.dev.azure.com/$pOrganization/_apis/graph/users?api-version=7.0-preview";
+    $response = _request_get($url);
+    $res = json_decode($response, true);
+    if (!empty($res) && is_array($res)) {
+        file_put_contents(__DIR__ . '/data/users.json', $response); // emergencia ou para DEV
+    }
+    $response = null;
 }
 
 function allUsers(string $pOrganization = ORG): void
@@ -186,13 +244,47 @@ function allUsers(string $pOrganization = ORG): void
     if (defined('ONLINE') && ONLINE === FALSE) {
         return;
     }
-    $url = "https://analytics.dev.azure.com/$pOrganization/_odata/v4.0-preview/Users";
-    $response = _request_get($url);
-    $res = json_decode($response, true);
-    if (!empty($res) && is_array($res)) {
-        file_put_contents(__DIR__ . '/data/users.json', $response); // emergencia ou para DEV
-    }
-    $response = null;
+
+    $allUsers = [];
+    $continuationToken = null;
+
+    do {
+        $url = "https://vsaex.dev.azure.com/Loglab/_apis/MemberEntitlements?skip=0";
+
+        if ($continuationToken) {
+            $url .= "&continuationToken=" . urlencode($continuationToken);
+        }
+
+        $response = _request_get($url);
+
+        $headers = [];
+        $body = null;
+
+        // ⚠️ importante: sua função _request_get precisa retornar headers também
+        // Exemplo esperado:
+        // ['headers' => [...], 'body' => 'json...']
+        if (is_array($response)) {
+            $headers = $response['headers'] ?? [];
+            $body = $response['body'] ?? null;
+        } else {
+            $body = $response;
+        }
+
+        $res = json_decode($body, true);
+
+        if (!empty($res['continuationToken'])) {
+            $allUsers = array_merge($allUsers, $res['items']);
+        }
+
+        // 👇 aqui está o segredo
+        $continuationToken = $headers['x-ms-continuationtoken'] ?? null;
+    } while ($continuationToken);
+
+    // salva tudo
+    file_put_contents(
+        __DIR__ . '/data/users.json',
+        json_encode($allUsers, JSON_PRETTY_PRINT)
+    );
 }
 
 /**
@@ -217,7 +309,9 @@ function _me(string $pOrganization = ORG): void
         $me = array_filter($users, fn($u) => $u['UserEmail'] == (defined('EDEV') ? EDEV : ''));
         $me = !empty($me) && is_array($me) ? reset($me) : [];
     }
-    file_put_contents(__DIR__ . '/data/me.json', json_encode($me)); // emergencia ou para DEV
+    if (is_array($me) && count($me) > 1) {
+        file_put_contents(__DIR__ . '/data/me.json', json_encode($me)); // emergencia ou para DEV
+    }
 }
 
 /**
@@ -243,14 +337,12 @@ function me($key = 'all'): array |string|null
         if (is_array($all)) {
             if (key_exists($key, $all)) {
                 return $all[$key];
-            }
-            else {
+            } else {
                 return $all;
             }
         }
         return $all;
-    }
-    else {
+    } else {
         return null;
     }
 }
@@ -289,8 +381,7 @@ function dados_agrupados(array $dados = []): array
         $hours = 0.0;
         if (isset($r['CompletedWork']) && is_numeric($r['CompletedWork'])) {
             $hours = floatval($r['CompletedWork']);
-        }
-        else {
+        } else {
             foreach ($r as $v) {
                 if (is_numeric($v)) {
                     $hours = floatval($v);
@@ -341,6 +432,134 @@ function dados_agrupados(array $dados = []): array
     return $grouped;
 }
 
+function hasAnalyticsAccess(string $pOrganization = ORG): bool
+{
+    $url = "https://analytics.dev.azure.com/$pOrganization/_odata/v4.0-preview/";
+    $response = _request_get($url);
+    $data = json_decode($response, true);
+
+    if (!empty($data) && is_array($data)) {
+        file_put_contents(__DIR__ . '/data/hasAnalyticsAccess.json', $response); // emergencia ou para DEV
+    }
+
+    return !isset($data['error']);
+}
+
+function _url_lista_tarefas_proj(string $pProject, string $pOrganization = ORG)
+{
+    //
+    $url = sprintf(LISTTASKS, $pOrganization, $pProject);
+    perf_log('URL_REQUEST: ' . $url, __FILE__, __LINE__);
+    return $url;
+}
+
+function _get_query_mes(string $pCustomPrazoIni, string $pCustomPrazoFim): string
+{
+    //[Custom.Prazoss] >= '{$dataIni}T00:00:00.0000000'
+    //[Custom.Prazoss] <= '{$dataFim}T00:00:00.0000000'
+
+
+    $query = [
+        'query' => <<<WIQL
+SELECT
+    [System.Id]
+FROM workitems
+WHERE
+    [Custom.Prazoss] >= '$pCustomPrazoIni'
+    AND [Custom.Prazoss] <= '$pCustomPrazoFim'
+    AND [System.WorkItemType] <> ''
+    AND [System.AssignedTo] = @me
+WIQL
+    ];
+
+    $encoded = json_encode($query, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+    perf_log('Query WIQL gerada: ' . $encoded, __FILE__, __LINE__);
+
+    return $encoded;
+}
+
+function _get_WorkItemsId(string $pUrl, string $pDataIni, string $pDataFim): array|false
+{
+    perf_log('Request Work Items: ' . $pUrl, __FILE__, __LINE__);
+
+    $vPayload = _get_query_mes($pDataIni, $pDataFim);
+
+    perf_log('Post Request List WorkItems: ' . $pUrl, __FILE__, __LINE__);
+    $response = _request_post($pUrl, $vPayload);
+
+    $data = json_decode($response, true);
+    $workItemsId = [];
+
+    // Extrair os IDs dos WorkItems
+    if (isset($data['workItems']) && is_array($data['workItems'])) {
+        foreach ($data['workItems'] as $item) {
+            if (isset($item['id'])) {
+                $workItemsId[] = $item['id'];
+            }
+        }
+    }
+
+    return $workItemsId;
+}
+
+function tarefas_mes(array $pWorkItemsId = [], string $pOrganization = ORG)
+{
+    if (empty($pWorkItemsId)) {
+        return;
+    }
+    $ids = implode(',', $pWorkItemsId);
+    $url = sprintf(UTASK, $pOrganization, $ids);
+    perf_log('Request Tarefas Mes: ' . $url, __FILE__, __LINE__);
+
+    $response = _request_get($url);
+    $data = json_decode($response, true);
+    $count = is_array($data) && key_exists('count', $data) ? (int) $data['count'] : 0;
+    $newData = [];
+
+    if ($count > 0) {
+        $d = $data['value'];
+
+        foreach ($d as $k => $v) {
+            $newData[] = _parseWorkItems($v);
+        }
+    }
+
+    return $newData;
+}
+
+function _parseWorkItems(array $pWorkItem = []): array
+{
+    // parse array para o modelo anterior
+    if (!empty($pWorkItem) && is_array($pWorkItem) && key_exists('fields', $pWorkItem) && key_exists('id', $pWorkItem)) {
+        $fields = $pWorkItem['fields'];
+        $value = [
+            'WorkItemId' => $fields['System.Id'] ?? 0,
+            'Title' => $fields['System.Title'] ?? 'Ne',
+            'WorkItemType' => $fields['System.WorkItemType'] ?? 'Ne',
+            'State' => $fields['System.State'] ?? 'Ne',
+            'Activity' => $fields['Microsoft.VSTS.Common.Activity'] ?? 'Ne',
+            'CompletedWork' => $fields['Microsoft.VSTS.Scheduling.CompletedWork'] ?? 0,
+            'OriginalEstimate' => $fields['Microsoft.VSTS.Scheduling.OriginalEstimate'] ?? 0,
+            'ParentWorkItemId' => $fields['System.Parent'] ?? 'Ne',
+            'Rev' => $pWorkItem['rev'],
+            'CommentCount' => $fields['System.CommentCount'] ?? 0,
+            'Custom_Prazoss' => $fields['Custom.Prazoss'] ?? '2020-02-20T20:02:22Z',
+            'Project' => ['ProjectName' => $fields['System.TeamProject']],
+            'AssignedTo' => [
+                'UserName' => $fields['System.AssignedTo']['displayName'],
+                'UserEmail' => $fields['System.AssignedTo']['uniqueName'],
+            ]
+        ];
+    } else {
+        $value = [];
+    }
+
+    return $value;
+}
+
+$data = hasAnalyticsAccess();
+
 if (isset($qual)) {
     $ini_principal = perf_start('Processamento Principal', __FILE__, __LINE__);
 
@@ -358,9 +577,12 @@ if (isset($qual)) {
     $usuario = me('UserSK');
     $umail = me('UserEmail');
     $projects = defined('PROJ') ? PROJ : [];
+    $project = defined('PROJETO') ? PROJETO : '';
     $intervalo = isset($qual) ? intervalo($qual) : ["ini" => null, "fim" => null];
     $dataInicio = $intervalo["ini"];
     $dataFim = $intervalo["fim"];
+    $dataInicioQ = $intervalo["qini"];
+    $dataFimQ = $intervalo["qfim"];
     $mes = $intervalo["mes"];
     $ano = $intervalo["ano"];
     perf_end('Carregamento Variaveis', $ini_var, __FILE__, __LINE__);
@@ -373,23 +595,28 @@ if (isset($qual)) {
         $dados = json_decode($arrayjson, true);
     }
 
-    if (count($dados) === 0) {
+    if (is_array($dados) && count($dados) === 0) {
         $perfFetch = perf_start('Busca dados API', __FILE__, __LINE__);
-        //multiprojeto
-        foreach ($projects as $projeto) {
-            $url = _urlTasks($projeto, $mes, $ano, $umail);
-            $perf_request_projeto = perf_start("Request Projeto: $projeto", __FILE__, __LINE__);
-            $response = _request_get($url);
-            perf_end("Request Projeto: $projeto", $perf_request_projeto, __FILE__, __LINE__);
+        //allprojects
+        //foreach ($projects as $projeto) {
 
-            $jd = json_decode($response, true);
+        $url = _url_lista_tarefas_proj($project);
+        $ids = _get_WorkItemsId($url, $dataInicioQ, $dataFimQ);
 
-            //preciso garantir que exista, nao seja vazio e seja array
-            if (isset($jd['value']) && (!empty($jd['value'])) && (is_array($jd['value']))) {
-                $values = $jd['value'];
-                $dados = array_merge($dados, $values);
-            }
-        }
+        $perf_request_projeto = perf_start("Request Projeto: $project", __FILE__, __LINE__);
+        $jd = tarefas_mes($ids);
+        perf_end("Request Projeto: $project", $perf_request_projeto, __FILE__, __LINE__);
+
+        //            $response = _request_post($url, '');
+        //            perf_end("Request Projeto: $projeto", $perf_request_projeto, __FILE__, __LINE__);
+
+
+        //preciso garantir que exista, nao seja vazio e seja array
+        //if ((!empty($jd)) && (is_array($jd))) {
+        //    $dados = array_merge($dados, $jd);
+        //}
+        $dados = $jd;
+        // }
         file_put_contents(__DIR__ . '/data/' . "$qual.json", json_encode($dados)); // emergencia ou para DEV
         perf_end('Busca dados API', $perfFetch, __FILE__, __LINE__);
     }
@@ -398,6 +625,7 @@ if (isset($qual)) {
     $endTs = strtotime($dataFim);
 
     $perf_array_filter = perf_start('Filtragem dados retornados da API', __FILE__, __LINE__);
+    if(is_null($dados)) die('Dados nulos, em desenvolvimento, verificar resposta da API e estrutura dos dados');
     $dados = array_values(array_filter($dados, function ($val) use ($startTs, $endTs, $umail) {
         if (!isset($val['AssignedTo']['UserEmail']) || $val['AssignedTo']['UserEmail'] !== $umail)
             return false;
