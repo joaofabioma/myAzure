@@ -1,7 +1,7 @@
 <?php
 // inc/const.php
-const VERSION = '1.0.3'; // 2026-02-27 - toda alteracao, incrementar 0.0.1
-const DATE = '2026-02-27'; // 2026-02-27 - toda alteracao, alterar data
+const VERSION = '1.0.4'; // 2026-02-27 - a cada alteração, incrementar 0.0.1
+const DATE = '2026-04-01'; // 2026-02-27 - a cada alteração, alterar data
 
 if (php_sapi_name() !== 'cli') {
     $versionFile = __DIR__ . '/../VERSION';
