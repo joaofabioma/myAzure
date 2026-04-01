@@ -456,7 +456,7 @@ if ($qual) {
         <div class="header">
             <div>
                 <h1 style="margin: 0; font-size: 1.5rem;">Performance</h1>
-                <p style="margin: 0; color: #7f8c8d;">Detalhes das tasks, horas, projetos e atividades</p>
+                <p style="margin: 0; color: #7f8c8d;">Detalhes das tarefas, horas, projetos e atividades</p>
             </div>
             <form method="GET" id="monthForm">
                 <select name="mes" class="form-select" onchange="this.form.submit()">
@@ -476,7 +476,7 @@ if ($qual) {
                 <span style="font-size: 0.8rem; color: <?= htmlspecialchars($comparacaoHorasMesAnterior['color'], ENT_QUOTES, 'UTF-8') ?>;"><?= htmlspecialchars($comparacaoHorasMesAnterior['html'], ENT_QUOTES, 'UTF-8') ?></span>
             </div>
             <div class="stat-card" style="border-left: 0.21rem solid #306ae6cf;">
-                <span class="stat-label">Tasks Concluídas</span>
+                <span class="stat-label">Tarefas Concluídas</span>
                 <span class="stat-value" data-count-to="<?= count($dados) ?>" data-decimals="0">0</span>
                 <span style="font-size: 0.8rem; color: #7f8c8d;">Média de <?= number_format(count($dados) / (count($produtividadeDiaria) ?: 1), 1) ?> por dia</span>
             </div>
@@ -533,7 +533,7 @@ if ($qual) {
         </div>
 
         <div class="audit-section">
-            <h3 style="margin-top: 0;">Auditoria Tasks</h3>
+            <h3 style="margin-top: 0;">Auditoria Tarefas</h3>
             <div class="audit-tab">
                 <button class="tab-btn" onclick="showAudit('zeroHours', this)">
                     ⚠ Sem Horas (<?= count($audit['zeroHours']) ?>)
