@@ -123,7 +123,6 @@ function _request_post(string $pUrl, $pPayload)
     }
 }
 
-
 function tableHead(string $vTittle = ''): string
 {
     return $vTittle !== '' ? "<th>$vTittle</th>" : '';
@@ -329,7 +328,8 @@ function allUsers(string $pOrganization = ORG): void
                 $allRawItems = array_merge($allRawItems, $page);
             }
             if (($continuationToken === null || $continuationToken === '')
-                && is_array($res) && !empty($res['continuationToken'])) {
+                && is_array($res) && !empty($res['continuationToken'])
+            ) {
                 $continuationToken = $res['continuationToken'];
             }
             $pages++;
@@ -394,6 +394,7 @@ function _me(string $pOrganization = ORG): void
         $me = array_filter($users, fn($u) => $u['UserEmail'] == (defined('EDEV') ? EDEV : ''));
         $me = !empty($me) && is_array($me) ? reset($me) : [];
     }
+
     if (is_array($me) && count($me) > 1) {
         file_put_contents(__DIR__ . '/data/me.json', json_encode($me)); // emergencia ou para DEV
     }
@@ -416,6 +417,12 @@ function me($key = 'all'): array |string|null
      "GitHubUserId": null,
      "UserType": null
      */
+    // carregar de data/me.json, que é gerado pela função _me() que deve ser chamada antes
+    if (!file_exists(__DIR__ . '/data/me.json')) {
+        if (file_exists(__DIR__ . '/data/users.json')) {
+            _me();
+        }
+    }
     $all = file_get_contents(__DIR__ . '/data/me.json');
     $all = json_decode($all, true);
     if (!empty($all)) {
@@ -752,6 +759,21 @@ if (!function_exists('resumoEstatisticasMesRelatorio')) {
         ];
     }
 }
+
+if (!function_exists('_paths_create')) {
+    function _paths_create()
+    {
+        $paths = ['/logs', '/data'];
+        foreach ($paths as $path) {
+            $vP = __DIR__ . $path;
+            if (!is_dir($vP)) {
+                mkdir($vP, 0777, true);
+            }
+        }
+    }
+}
+
+_paths_create();
 
 if (isset($qual)) {
     $data = hasAnalyticsAccess();
