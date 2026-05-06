@@ -355,6 +355,7 @@ if ($qual) {
             justify-self: center;
         }
 
+
         .chart-container {
             background: white;
             padding: 0.5rem;
