@@ -347,15 +347,20 @@ if ($qual) {
         .charts-grid-parts {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 1.5rem;
+            gap: 1.0rem;
             margin-bottom: 2rem;
+        }
+
+        .chart-container>h3 {
+            justify-self: center;
         }
 
         .chart-container {
             background: white;
-            padding: 1.5rem;
+            padding: 0.5rem;
             border-radius: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            zoom: 0.95;
         }
 
         .chart-wrapper {
@@ -511,7 +516,7 @@ if ($qual) {
 
         <div class="charts-grid-parts">
             <div class="chart-container">
-                <h3 style="margin-top: 0;">Estimativa vs. Realizado por Projeto</h3>
+                <h3 style="margin-top: 0;">Estimativa x Atuado por Projeto</h3>
                 <div class="chart-wrapper">
                     <canvas id="estimativaChart"></canvas>
                 </div>
@@ -574,6 +579,7 @@ if ($qual) {
 
         (function animateStatValues() {
             var durationMs = 2500;
+
             function formatLikePhpNumberFormat(num, decimals) {
                 var fixed = Number(num).toFixed(decimals);
                 var parts = fixed.split('.');
@@ -583,6 +589,7 @@ if ($qual) {
             var nodes = document.querySelectorAll('.stats-grid .stat-value[data-count-to]');
             if (!nodes.length) return;
             var startTs = null;
+
             function frame(ts) {
                 if (startTs === null) startTs = ts;
                 var t = Math.min(1, (ts - startTs) / durationMs);
@@ -631,9 +638,9 @@ if ($qual) {
         const productivityTotalDuration = 2500;
         const productivityDelayBetweenPoints = productivityTotalDuration / Math.max(1, productivityValues.length);
         const productivitySegmentDuration = productivityDelayBetweenPoints * 1.1;
-        const productivityPreviousY = (ctx) => ctx.index === 0
-            ? ctx.chart.scales.y.getPixelForValue(0)
-            : ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y;
+        const productivityPreviousY = (ctx) => ctx.index === 0 ?
+            ctx.chart.scales.y.getPixelForValue(0) :
+            ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y;
         const productivityLineAnimation = {
             x: {
                 type: 'number',
@@ -789,7 +796,7 @@ if ($qual) {
                 }
             }
         });
-        
+
         //queria radar, ficou feio
         new Chart(document.getElementById('atividadesChart'), {
             type: 'doughnut',
