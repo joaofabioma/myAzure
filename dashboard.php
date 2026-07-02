@@ -292,7 +292,7 @@ if ($qual) {
             flex: 1;
             width: 100%;
             box-sizing: border-box;
-            padding: 2rem;
+            padding: 1rem;
             overflow-y: auto;
         }
 
@@ -300,14 +300,14 @@ if ($qual) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .stat-card {
@@ -341,7 +341,7 @@ if ($qual) {
             display: grid;
             /* grid-template-columns: 1fr 1fr; */
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .charts-grid-parts {
