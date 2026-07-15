@@ -129,7 +129,7 @@ Abra o `.env` na raiz do projeto e preencha:
 
 | Variável | Descrição | Exemplo |
 |---|---|---|
-| `ORGANIZATION` | Nome da organização no Azure DevOps | `Loglab` |
+| `ORGANIZATION` | Nome da organização no Azure DevOps | `Empresa` |
 | `AUTH_MODE` | `cli`, `oauth` ou `device` (Docker, sem Portal) | `cli` |
 | `TENANT_ID` | Directory (tenant) ID do Entra ID | `f47ac10b-...` |
 | `CLIENT_ID` | Application (client) ID do App Registration (modo `oauth`) | `a1b2c3d4-...` |
