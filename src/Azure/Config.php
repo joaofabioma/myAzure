@@ -23,6 +23,9 @@ final class Config
     /** Client ID público da Microsoft Azure CLI (não exige App Registration próprio). */
     public const DEVICE_CLIENT_ID = '04b07795-8ddb-461a-bbee-02f9e1bf7b46';
 
+    /** Valor de exemplo no .env-example — não é um tenant válido no Entra ID. */
+    private const PLACEHOLDER_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+
     public function __construct(
         public readonly string $organization,
         public readonly string $project,
@@ -66,6 +69,20 @@ final class Config
     public function authorityUrl(): string
     {
         return 'https://login.microsoftonline.com/' . rawurlencode($this->tenantId);
+    }
+
+    /** Indica se TENANT_ID foi preenchido com um valor utilizável (não placeholder/vazio). */
+    public function isTenantIdConfigured(): bool
+    {
+        $id = strtolower(trim($this->tenantId));
+
+        return $id !== '' && $id !== self::PLACEHOLDER_TENANT_ID;
+    }
+
+    /** Mensagem amigável quando TENANT_ID ainda está no valor padrão do .env-example. */
+    public function tenantIdConfigHint(): string
+    {
+        return 'TENANT_ID não configurado no .env. Defina o GUID do tenant em portal.azure.com › Microsoft Entra ID › Visão geral, ou use TENANT_ID=organizations para contas corporativas.';
     }
 
     /** Escopo delegado do Azure DevOps (v2.0 endpoint). */

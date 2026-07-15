@@ -3,6 +3,14 @@ set -e
 
 cd /var/www/html
 
+if [ -d .env ]; then
+    echo "ERRO: .env é uma pasta — isso ocorre quando o Docker sobe sem o arquivo .env criado."
+    echo "      docker compose down && sudo rm -rf .env && cp .env-example .env"
+    echo "      ou   "
+    echo " no windows: docker compose down && del .env && copy .env-example .env"
+    exit 1
+fi
+
 if [ ! -f .env ]; then
     if [ -f .env-example ]; then
         cp .env-example .env

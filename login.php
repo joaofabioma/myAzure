@@ -57,6 +57,8 @@ try {
     echo '<h1>Falha na autenticação</h1><p>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
     if ($config->authMode === Config::AUTH_MODE_CLI) {
         echo '<p>Execute <code>az login</code> no terminal e recarregue esta página.</p>';
+    } elseif (!$config->isTenantIdConfigured()) {
+        echo '<p>Edite o arquivo <code>.env</code> na raiz do projeto, ajuste <code>TENANT_ID</code> e reinicie o container.</p>';
     }
 }
 

@@ -5,6 +5,8 @@ services:
     ports:
       - "18280:80"
     volumes:
+      # O arquivo .env precisa existir no host ANTES do "docker compose up".
+      # Se não existir, o Docker cria uma pasta .env e o container falha ao iniciar.
       - ./.env:/var/www/html/.env:ro
       - ./data:/var/www/html/data
       - ./logs:/var/www/html/logs

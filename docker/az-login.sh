@@ -12,6 +12,13 @@ fi
 TENANT_ID=$(grep -E '^TENANT_ID=' ../.env 2>/dev/null | head -1 | cut -d= -f2- | tr -d ' "\r' || true)
 TENANT_ID=${TENANT_ID:-organizations}
 
+if [ -z "$TENANT_ID" ] || [ "$(printf '%s' "$TENANT_ID" | tr '[:upper:]' '[:lower:]')" = "00000000-0000-0000-0000-000000000000" ]; then
+    echo "ERRO: TENANT_ID não configurado no .env." >&2
+    echo "      Defina o GUID do tenant (portal.azure.com › Microsoft Entra ID › Visão geral)" >&2
+    echo "      ou use TENANT_ID=organizations para contas corporativas." >&2
+    exit 1
+fi
+
 echo ""
 echo "=== Passo a passo ==="
 echo "1. Copie o código que aparecer abaixo"

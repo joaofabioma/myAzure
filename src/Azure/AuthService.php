@@ -53,6 +53,8 @@ final class AuthService
             return;
         }
 
+        $this->ensureTenantConfigured();
+
         $verifier  = rtrim(strtr(base64_encode(random_bytes(64)), '+/', '-_'), '=');
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
         $state     = bin2hex(random_bytes(16));
@@ -82,6 +84,7 @@ final class AuthService
      */
     public function handleCallback(string $code, string $state): void
     {
+        $this->ensureTenantConfigured();
         $this->ensureSession();
         $expectedState = (string)($_SESSION[self::SESSION_STATE] ?? '');
         $verifier      = (string)($_SESSION[self::SESSION_PKCE] ?? '');
@@ -137,6 +140,7 @@ final class AuthService
             throw new AuthException('Device Code Flow disponível apenas com AUTH_MODE=device.');
         }
 
+        $this->ensureTenantConfigured();
         $this->ensureSession();
 
         $curl = curl_init($this->config->authorityUrl() . '/oauth2/v2.0/devicecode');
@@ -292,6 +296,8 @@ final class AuthService
      */
     private function requestToken(array $grantParams, bool $pendingOk = false): string|false
     {
+        $this->ensureTenantConfigured();
+
         $params = $grantParams + [
             'client_id' => $this->config->effectiveClientId(),
             'scope'     => $this->config->scope(),
@@ -351,6 +357,13 @@ final class AuthService
                 'cookie_httponly' => true,
                 'cookie_samesite' => 'Lax',
             ]);
+        }
+    }
+
+    private function ensureTenantConfigured(): void
+    {
+        if (!$this->config->isTenantIdConfigured()) {
+            throw new AuthException($this->config->tenantIdConfigHint());
         }
     }
 }
