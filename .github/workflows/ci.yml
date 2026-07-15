@@ -4,8 +4,15 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  tests:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,13 +20,14 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: "8.5"
           tools: composer
           coverage: none
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Validar Composer
+        run: |
+          composer validate --strict
+          composer check-platform-reqs
 
       - name: PHP lint
-        run: |
-          find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
+        run: git ls-files '*.php' | xargs php -l

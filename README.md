@@ -13,7 +13,8 @@ Este guia é voltado para quem **não tem PHP instalado** e precisa colocar a ap
 | PHP | **8.5.1** | Executar a aplicação (exigido pelo `composer.json`) |
 | Composer | 2.x | Gerar o autoload (`vendor/`), o arquivo `VERSION` e o `.env` |
 | Extensões PHP | `curl`, `mbstring`, `openssl` | Chamadas HTTPS à API do Azure DevOps e tratamento de strings |
-| Conta Azure DevOps | — | Gerar o Personal Access Token (PAT) |
+| Conta corporativa (Entra ID) | — | Login OAuth no Azure DevOps (**sem PAT**) |
+| Azure CLI (modo `cli`) | 2.x | Emitir o Access Token via `az login` |
 
 > A aplicação **não roda** sem o `composer install`: as pastas `vendor/` e o arquivo `VERSION` não estão no repositório (estão no `.gitignore`).
 
@@ -113,12 +114,14 @@ O comando `composer setup` faz três coisas:
 2. Grava o arquivo `VERSION` na raiz (sem ele a aplicação responde **503 — Versão incompatível**);
 3. Copia `.env-example` para `.env`, caso ainda não exista.
 
-### 4.1 Gerar o Personal Access Token (PAT)
+### 4.1 Configurar a autenticação (Microsoft Entra ID — sem PAT)
 
-1. Acesse `https://dev.azure.com/{SuaOrganizacao}/_usersSettings/tokens`;
-2. Clique em **+ New Token**;
-3. Dê permissão de **leitura em Work Items** e defina a validade;
-4. Copie o token gerado (ele só é exibido uma vez).
+A aplicação **não usa PAT**. Os tokens OAuth são emitidos pelo Microsoft Entra ID.
+Escolha um dos modos no `.env` (variável `AUTH_MODE`):
+
+- **`cli`** (padrão): instale a Azure CLI (`winget install Microsoft.AzureCLI`) e rode `az login` com a conta corporativa. Nada mais é necessário.
+- **`oauth`**: requer um App Registration no Entra ID (fluxo Authorization Code + PKCE). Siga o guia completo em [`docs/AUTENTICACAO-ENTRA-ID.md`](docs/AUTENTICACAO-ENTRA-ID.md).
+- **`device`**: login Microsoft no navegador (Device Code Flow), **sem App Registration** — ideal para Docker. Veja [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ### 4.2 Editar o `.env`
 
@@ -127,7 +130,12 @@ Abra o `.env` na raiz do projeto e preencha:
 | Variável | Descrição | Exemplo |
 |---|---|---|
 | `ORGANIZATION` | Nome da organização no Azure DevOps | `Loglab` |
-| `PERSONAL_ACESS_TOKEN` | PAT gerado no passo anterior | `abc123...` |
+| `AUTH_MODE` | `cli`, `oauth` ou `device` (Docker, sem Portal) | `cli` |
+| `TENANT_ID` | Directory (tenant) ID do Entra ID | `f47ac10b-...` |
+| `CLIENT_ID` | Application (client) ID do App Registration (modo `oauth`) | `a1b2c3d4-...` |
+| `REDIRECT_URI` | Redirect URI registrada no Entra ID (modo `oauth`) | `http://localhost:8000/callback.php` |
+| `APP_KEY` | Chave p/ criptografar o token (modos `oauth` e `device`) | `php -r "echo bin2hex(random_bytes(32));"` |
+| `HTTP_TIMEOUT` / `HTTP_RETRIES` | Timeout (s) e retries das chamadas à API | `30` / `3` |
 | `PROJECT_DEFAULT` | Projeto padrão | `CUIABA-MT-BRASIL` |
 | `PROJECTS` | Lista de projetos, separados por vírgula | `SITE-NOVO,CONTROLE-FINANCEIRO` |
 | `EMAIL_DEV` | E-mail do desenvolvedor logado no Azure (filtra as tarefas) | `nome.sobrenome@dominio.com.br` |
@@ -139,6 +147,17 @@ Abra o `.env` na raiz do projeto e preencha:
 ---
 
 ## 5. Rodar a aplicação
+
+### Com Docker (sem PHP instalado)
+
+```bash
+copy .env-example .env    # edite EMAIL_DEV e AUTH_MODE=device
+docker compose up -d --build
+```
+
+Guia completo: [`docs/DOCKER.md`](docs/DOCKER.md) — abra **http://localhost:8080**.
+
+### Com PHP local
 
 Use o servidor embutido do próprio PHP (não precisa de Apache/Nginx):
 
@@ -165,7 +184,8 @@ Na primeira execução com `REQUEST_ONLINE=TRUE`, a aplicação consulta a API d
 | `Call to undefined function curl_init()` | Extensão `curl` desabilitada | Descomente `extension=curl` no `php.ini` e reinicie o servidor |
 | `Call to undefined function mb_...()` | Extensão `mbstring` desabilitada | Descomente `extension=mbstring` no `php.ini` |
 | Erro de certificado SSL nas chamadas à API (Windows) | `curl` sem CA bundle | Configure `curl.cainfo` no `php.ini` (ver seção 2) |
-| Página vazia / sem dados | PAT inválido/expirado, `EMAIL_DEV` errado ou projetos incorretos no `.env` | Revise o `.env` e gere um novo PAT se necessário |
+| Página vazia / sem dados | Sem login no Entra ID, `EMAIL_DEV` errado ou projetos incorretos no `.env` | Rode `az login` (modo `cli`) ou acesse `/login.php` (modo `oauth`); revise o `.env` |
+| `Autenticação Azure DevOps necessária` (HTTP 401) | Token ausente/expirado | Modo `cli`: `az login`; modo `oauth`: acessar `/login.php` |
 | `Failed to open stream: vendor/autoload.php` | `composer install` não foi executado | Rode `composer setup` na raiz do projeto |
 
 ---
@@ -178,8 +198,11 @@ Na primeira execução com `REQUEST_ONLINE=TRUE`, a aplicação consulta a API d
 | `dashboard.php` | Análise mensal: gráficos e auditoria de inconsistências |
 | `functions.php` | Biblioteca compartilhada: helpers, fetch da API, filtros, agrupamentos |
 | `gerarmesatual.php` | Gera o arquivo PHP do mês atual (ex.: `mar2026.php`) |
-| `inc/prepend.php` | Carrega o `.env` e define as constantes (ORG, PAT, PROJ, EDEV, ONLINE) |
+| `inc/prepend.php` | Carrega o `.env`, inicializa os serviços Azure e define as constantes (ORG, PROJ, EDEV, ONLINE) |
 | `inc/const.php` | Constante `VERSION` (incrementada a cada alteração) |
 | `src/Class/Security.php` | Bloqueia acesso direto a arquivos internos |
+| `src/Azure/` | Autenticação Entra ID + cliente REST (ver [`docs/AUTENTICACAO-ENTRA-ID.md`](docs/AUTENTICACAO-ENTRA-ID.md)) |
+| `login.php` / `callback.php` / `logout.php` | Fluxo OAuth 2.0 (Authorization Code + PKCE) |
+| `atividades.php` | Endpoint JSON/HTML com as atividades do mês (WIQL + Work Items) |
 | `data/*.json` | Cache bruto da API (pré-filtro) |
 | `logs/` | Logs de performance |

@@ -1,0 +1,17 @@
+.git
+.github
+.cursor
+.vscode
+.env
+!.env-example
+data/*.json
+data/.auth_blob
+logs/*
+vendor
+VERSION
+*.md
+!docs/DOCKER.md
+comandos
+ajuda.txt
+test.php
+test_entra.php

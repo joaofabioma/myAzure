@@ -1,4 +1,7 @@
 <?php
+
+use App\Azure\Services;
+
 header('X-Robots-Tag: noindex, nofollow, noarchive');
 date_default_timezone_set('America/Cuiaba');
 setlocale(LC_TIME, 'pt_BR.UTF-8', 'pt_BR.utf-8', 'pt_BR');
@@ -58,68 +61,56 @@ function perf_end(string $acao, float $inicio, string $arquivo, int $linha): voi
     perf_log("FIM- $acao" . ' | ' . number_format($elapsedMs, 3, '.', '') . 'ms', $arquivo ?? '-', $linha);
 }
 
+/**
+ * Redireciona para o login Entra ID (ou encerra com mensagem clara em modo CLI).
+ */
+function _exigir_login(string $motivo): never
+{
+    perf_log('Autenticação necessária: ' . $motivo, __FILE__, __LINE__);
+    $modo = \App\Azure\Services::config()->authMode;
+    if (Services::config()->isBrowserAuth() && !headers_sent() && php_sapi_name() !== 'cli') {
+        header('Location: /login.php', true, 302);
+        exit;
+    }
+    http_response_code(401);
+    $extra = '';
+    if ($modo === \App\Azure\Config::AUTH_MODE_CLI) {
+        $extra = ' — execute "az login" no servidor.';
+    }
+    die('Autenticação Azure DevOps necessária: ' . htmlspecialchars($motivo, ENT_QUOTES, 'UTF-8') . $extra);
+}
+
 function _request_get(string $pUrl)
 {
-    $curl = curl_init($pUrl);
-    if (strpos($pUrl, 'WorkItems') !== false) {
-        $pUrl = urlencode($pUrl);
-    }
-    $curl_opt = [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            "Authorization: " . 'Basic ' . base64_encode(":" . (defined('PAT') ? PAT : '')),
-            'Accept: application/json',
-            'Content-Type: application/json'
-        ]
-    ];
-    //die(print('Basic ' . base64_encode(":" . PAT))); // para usar no Postman, se não souber usar scripts
-    curl_setopt_array($curl, $curl_opt);
-    $response = curl_exec($curl);
-    if ($response === false) {
-        if (defined('DEBUG') && DEBUG === true) {
-            $info = curl_getinfo($curl);
-            var_dump($info);
-            die();
+    try {
+        return \App\Azure\Services::devOps()->getRaw($pUrl);
+    } catch (\App\Azure\AuthException $e) {
+        _exigir_login($e->getMessage());
+    } catch (\App\Azure\ApiException $e) {
+        if ($e->isUnauthorized()) {
+            _exigir_login($e->getMessage());
         }
-        die('Erro CURL na API Azure (Timeout ou Conexão): ' . curl_error($curl) . ' - Linha ' . __LINE__);
-    } else {
-        $curl = null;
-        return $response;
+        if (defined('DEBUG') && DEBUG === true) {
+            die('Erro na API Azure DevOps: ' . htmlspecialchars($e->getMessage()) . ' - HTTP ' . $e->statusCode);
+        }
+        die('Erro na API Azure (HTTP ' . $e->statusCode . ') - Linha ' . __LINE__);
     }
 }
 
 function _request_post(string $pUrl, $pPayload)
 {
-    $curl = curl_init($pUrl);
-    //if (strpos($pUrl, 'WorkItems') !== false) {
-    //    $pUrl = urlencode($pUrl);
-    //}
-    $curl_opt = [
-        CURLOPT_RETURNTRANSFER => true,
-        // CURLOPT_HEADER => true,
-        CURLOPT_HTTPHEADER => [
-            "Authorization: " . 'Basic ' . base64_encode(":" . (defined('PAT') ? PAT : '')),
-            'Accept: application/json',
-            'Content-Type: application/json'
-        ],
-        CURLOPT_MAXREDIRS => 5,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => $pPayload,
-    ];
-
-    curl_setopt_array($curl, $curl_opt);
-    $response = curl_exec($curl);
-    if ($response === false) {
-        if (defined('DEBUG') && DEBUG === true) {
-            $info = curl_getinfo($curl);
-            var_dump($info);
-            die();
+    try {
+        return \App\Azure\Services::devOps()->postRaw($pUrl, (string)$pPayload);
+    } catch (\App\Azure\AuthException $e) {
+        _exigir_login($e->getMessage());
+    } catch (\App\Azure\ApiException $e) {
+        if ($e->isUnauthorized()) {
+            _exigir_login($e->getMessage());
         }
-        die('Erro CURL na API Azure (Timeout ou Conexão): ' . curl_error($curl) . ' - Linha ' . __LINE__);
-    } else {
-        $curl = null;
-        return $response;
+        if (defined('DEBUG') && DEBUG === true) {
+            die('Erro na API Azure DevOps: ' . htmlspecialchars($e->getMessage()) . ' - HTTP ' . $e->statusCode);
+        }
+        die('Erro na API Azure (HTTP ' . $e->statusCode . ') - Linha ' . __LINE__);
     }
 }
 
@@ -241,16 +232,20 @@ function allUsers(string $pOrganization = ORG): void
         return;
     }
 
-    $pat = defined('PAT') ? PAT : '';
+    try {
+        $accessToken = \App\Azure\Services::auth()->getAccessToken();
+    } catch (\App\Azure\AuthException $e) {
+        _exigir_login($e->getMessage());
+    }
     $orgSeg = rawurlencode($pOrganization);
     $allRawItems = [];
 
-    $curlGetJson = static function (string $url, bool $withHeaders) use ($pat): array {
+    $curlGetJson = static function (string $url, bool $withHeaders) use ($accessToken): array {
         $curl = curl_init($url);
         $opts = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
-                'Authorization: Basic ' . base64_encode(':' . $pat),
+                'Authorization: Bearer ' . $accessToken,
                 'Accept: application/json',
             ],
         ];
@@ -308,7 +303,7 @@ function allUsers(string $pOrganization = ORG): void
         }
     }
 
-    // Fallback: Graph Users (menos permissões que member entitlement; costuma funcionar com PAT "Graph read")
+    // Fallback: Graph Users (exige menos permissões que member entitlement)
     if ($allRawItems === []) {
         $continuationToken = null;
         $pages = 0;

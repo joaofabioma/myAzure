@@ -2,8 +2,9 @@ VERSION
 .env
 *.bkp.php
 /vendor
-/.history
-/data/*.json
+.history/
+data/*.json
+data/.auth_blob
 logs/performance.log
 /[a-z][a-z][a-z]20[0-9][0-9].php
 .cursor/
@@ -11,3 +12,4 @@ logs/performance.log
 .cursorignore
 *copy.php
 *bkp.php
+logs/*.log

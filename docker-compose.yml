@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    container_name: azure-devops-monitor
+    ports:
+      - "18280:80"
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - ./data:/var/www/html/data
+      - ./logs:/var/www/html/logs
+    environment:
+      TZ: America/Cuiaba
+      AZURE_CONFIG_DIR: /var/www/html/data/.azure
+    restart: unless-stopped

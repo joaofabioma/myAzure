@@ -1,7 +1,7 @@
 <?php
 // inc/const.php
-const VERSION = '1.0.4'; // 2026-02-27 - a cada alteração, incrementar 0.0.1
-const DATE = '2026-04-01'; // 2026-02-27 - a cada alteração, alterar data
+const VERSION = '1.1.11'; // 2026-07-14 - Remove config Apache não utilizada no Docker
+const DATE = '2026-07-14'; // 2026-02-27 - a cada alteração, alterar data
 
 if (php_sapi_name() !== 'cli') {
     $versionFile = __DIR__ . '/../VERSION';

@@ -41,7 +41,8 @@ $arquivosMesAno = obterArquivosMesAno();
                                     <div class="month-card-title"><?= htmlspecialchars($info['mesExtenso']) ?></div>
                                     <div class="month-card-year"><?= htmlspecialchars($info['ano']) ?></div>
                                     <!-- <p class="month-flip-hint">Passe o mouse para ver o resumo</p> -->
-                                    <a href="<?= $href ?>" class="month-flip-front-direct">Abrir direto</a>
+                                    <!-- <a href="<?php //= $href 
+                                                    ?>" class="month-flip-front-direct">Abrir direto</a> -->
                                 </div>
                             </div>
                             <div class="flip-box-back text-center" aria-label="Resumo do período">
