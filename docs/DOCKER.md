@@ -32,7 +32,7 @@ cp .env-example .env
 |---|---|
 | `AUTH_MODE` | `device` (login no navegador, sem Portal Azure) |
 | `EMAIL_DEV` | Seu e-mail no Azure DevOps |
-| `ORGANIZATION` | Nome da organização (ex.: `Loglab`) |
+| `ORGANIZATION` | Nome da organização (ex.: `Empresa`) |
 | `TENANT_ID` | Tenant da empresa (ou `organizations`) |
 | `APP_KEY` | 64 caracteres hex (gere uma chave ou copie do exemplo de um colega) |
 | `PROJECTS` | Projetos que você usa (opcional) |
